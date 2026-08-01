@@ -43,7 +43,7 @@ export default function Layout({ children }) {
           </button>
           <div className="topbar-title">
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              <NotebookPen size={17} /> rmfakecloud
+              rmfakecloud
             </span>
           </div>
           <span style={{ width: 34 }} />

@@ -46,7 +46,22 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --dur: 180ms;
 
+  /* Touch target minimum */
+  --touch-min: 44px;
+
   color-scheme: light;
+}
+
+/* Mobile: bump up type scale and spacing for readability at arm's length */
+@media (max-width: 599.98px) {
+  :root {
+    --text-xs: 0.8125rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 1.875rem;
+  }
 }
 
 /* ----- Paper (light) ------------------------------------------------ */

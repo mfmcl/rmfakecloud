@@ -263,11 +263,13 @@
 .page {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--sp-7) var(--sp-6) var(--sp-8);
 }
 .page-inner {
   width: 100%;
   max-width: var(--content-max);
+  min-width: 0;
   margin: 0 auto;
 }
 .page-narrow .page-inner {
@@ -295,6 +297,7 @@
   font-size: var(--text-lg);
   color: var(--ink-2);
   max-width: 60ch;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 959.98px) {
@@ -311,6 +314,9 @@
 @media (max-width: 599.98px) {
   .page {
     padding: var(--sp-4) var(--sp-3) var(--sp-6);
+  }
+  .btn {
+    white-space: normal;
   }
 }
 
@@ -332,6 +338,12 @@
   font-family: var(--font-body);
   font-size: var(--text-lg);
   color: var(--ink-2);
+  overflow-wrap: break-word;
+}
+@media (max-width: 599.98px) {
+  .home-hero .lede {
+    max-width: none;
+  }
 }
 
 .home-grid {
@@ -339,6 +351,10 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
   gap: var(--sp-5);
   align-items: start;
+}
+.home-grid > * {
+  min-width: 0;
+  overflow: hidden;
 }
 @media (max-width: 899.98px) {
   .home-grid {
@@ -396,10 +412,19 @@
   font-family: var(--font-display);
   font-size: var(--text-lg);
   letter-spacing: 0.02em;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 .upload-card .up-sub {
   font-size: var(--text-xs);
   color: var(--ink-3);
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+@media (max-width: 599.98px) {
+  .upload-card {
+    padding: var(--sp-5) var(--sp-3);
+  }
 }
 .upload-card.uploading {
   cursor: default;

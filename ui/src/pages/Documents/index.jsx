@@ -19,7 +19,7 @@ import { uploadFilesInBatches } from "../../common/upload";
 import Dropdown from "../../components/ui/Dropdown";
 import EmptyState from "../../components/ui/EmptyState";
 import Modal from "../../components/ui/Modal";
-import Spinner from "../../components/ui/Spinner";
+import DocsSkeleton from "../../components/ui/DocsSkeleton";
 import { FolderSearch } from "lucide-react";
 
 import { collectFiles, composeTree, findById, pathLabel } from "./tree-utils";
@@ -243,11 +243,7 @@ export default function Documents() {
   }
 
   if (!tree) {
-    return (
-      <div className="page-fill">
-        <Spinner label="Loading your library…" />
-      </div>
-    );
+    return <DocsSkeleton />;
   }
 
   const crumbs = searching

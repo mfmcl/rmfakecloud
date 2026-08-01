@@ -268,7 +268,7 @@
 }
 /* Animate any page root on mount — catch-all for pages that don't use .page */
 .page-stage > * {
-  animation: page-in 220ms var(--ease);
+  animation: page-in 320ms var(--ease);
 }
 
 .page {
@@ -276,7 +276,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--sp-7) var(--sp-6) var(--sp-8);
-  animation: page-in 220ms var(--ease);
+  animation: page-in 320ms var(--ease);
 }
 .page-inner {
   width: 100%;
@@ -535,6 +535,43 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+/* ------------------------------------------------------------------
+   Skeleton placeholders
+   ------------------------------------------------------------------ */
+
+.skel-bar {
+  display: inline-block;
+  background: var(--surface-3);
+  border-radius: var(--r-xs);
+  animation: skel-pulse 1.6s ease-in-out infinite;
+}
+:root[data-theme="ink"] .skel-bar {
+  background: var(--surface-3);
+}
+
+@keyframes skel-pulse {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 0.85; }
+}
+
+.skel-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+}
+
+.skel-file-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 11px var(--sp-3);
+  border-bottom: 1px solid var(--line);
+}
+.skel-file-row:last-child {
+  border-bottom: none;
 }
 
 /* ------------------------------------------------------------------

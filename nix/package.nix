@@ -27,13 +27,10 @@ buildGoModule rec {
     src = uiSrc;
     pnpm = pnpm_11;
     fetcherVersion = 4;
-    hash = "";
+    hash = "sha256-m++AoqNkD0pRB4OdSs80s9mHz76xUiI0tH+V9exd1IY=";
   };
 
   preBuild = lib.optionals enableWebui ''
-    # using sass-embedded fails at executing node_modules/sass-embedded-linux-x64/dart-sass/src/dart
-    rm -r ui/node_modules/sass-embedded ui/node_modules/.pnpm/sass-embedded*
-
     # avoid re-running pnpm i...
     touch ui/pnpm-lock.yaml
 

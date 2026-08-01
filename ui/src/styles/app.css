@@ -80,7 +80,7 @@
   padding: 8px var(--sp-3);
   margin-bottom: 1px;
   border: none;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: transparent;
   color: var(--sidebar-ink-2);
   font-family: var(--font-ui);
@@ -101,11 +101,13 @@
 .sidebar-link:hover {
   color: var(--sidebar-ink);
   background: rgba(255, 255, 255, 0.045);
+  box-shadow: var(--bubble);
 }
 .sidebar-link.active {
   color: var(--sidebar-ink);
   background: var(--sidebar-active);
-  box-shadow: inset 0 0 0 1px var(--sidebar-line);
+  box-shadow: var(--bubble);
+
 }
 
 .sidebar-foot {

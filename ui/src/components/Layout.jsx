@@ -41,11 +41,6 @@ export default function Layout({ children }) {
           <button className="icon-btn" onClick={() => setMenuOpen(true)} aria-label="Open menu">
             <Menu />
           </button>
-          <div className="topbar-title">
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-              rmfakecloud
-            </span>
-          </div>
           <span style={{ width: 34 }} />
         </header>
 

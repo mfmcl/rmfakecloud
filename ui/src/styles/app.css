@@ -227,9 +227,6 @@
     flex: none;
     padding: 0 var(--sp-3);
     background: color-mix(in srgb, var(--paper) 82%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--line);
     z-index: 100;
   }
   .topbar .brand-name {

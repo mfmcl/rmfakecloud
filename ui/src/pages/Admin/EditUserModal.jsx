@@ -2,38 +2,39 @@ import { useState } from "react";
 import apiService from "../../services/api.service";
 import Alert from "../../components/ui/Alert";
 
-export default function NewUserModal({ onSave, onClose }) {
+export default function EditUserModal({ user, onSave, onClose }) {
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     newPassword: "",
-    email: "",
-    userid: "",
+    email: user?.email || "",
   });
 
   function handleChange({ target }) {
     setForm({ ...form, [target.name]: target.value });
   }
 
-  function formIsValid() {
-    if (!form.userid) return setError("User ID is required"), false;
-    if (!form.email) return setError("Email is required"), false;
-    if (!form.newPassword) return setError("Password is required"), false;
-    return true;
-  }
-
   async function handleSubmit(event) {
     event.preventDefault();
-    if (!formIsValid()) return;
+    if (!form.email) {
+      setError("Email is required");
+      return;
+    }
     try {
-      await apiService.createuser(form);
+      await apiService.updateuser({
+        userid: user.userid,
+        email: form.email,
+        newPassword: form.newPassword,
+      });
       onSave();
     } catch (e) {
       setError(e.toString());
     }
   }
 
+  if (!user) return null;
+
   return (
-    <form onSubmit={handleSubmit} autoComplete="off">
+    <form onSubmit={handleSubmit}>
       {error && (
         <Alert kind="error" className="mb-4">
           {error}
@@ -41,37 +42,27 @@ export default function NewUserModal({ onSave, onClose }) {
       )}
 
       <div className="field">
-        <label htmlFor="nu-userid">User ID</label>
-        <input
-          id="nu-userid"
-          className="input"
-          autoComplete="off"
-          name="userid"
-          value={form.userid}
-          onChange={handleChange}
-          autoFocus
-        />
+        <label>User ID</label>
+        <input className="input" value={user.userid} disabled />
       </div>
       <div className="field">
-        <label htmlFor="nu-email">Email</label>
+        <label htmlFor="eu-email">Email</label>
         <input
-          id="nu-email"
+          id="eu-email"
           className="input"
-          autoComplete="off"
           type="email"
-          placeholder="name@example.com"
           name="email"
           value={form.email}
           onChange={handleChange}
         />
       </div>
       <div className="field">
-        <label htmlFor="nu-password">Password</label>
+        <label htmlFor="eu-password">New password</label>
         <input
-          id="nu-password"
+          id="eu-password"
           className="input"
-          autoComplete="new-password"
           type="password"
+          placeholder="Leave blank to keep current"
           name="newPassword"
           value={form.newPassword}
           onChange={handleChange}
@@ -83,7 +74,7 @@ export default function NewUserModal({ onSave, onClose }) {
           Cancel
         </button>
         <button type="submit" className="btn btn-primary">
-          Create user
+          Save changes
         </button>
       </div>
     </form>

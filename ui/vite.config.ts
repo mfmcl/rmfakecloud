@@ -34,10 +34,10 @@ export default defineConfig({
   },
   server: {
 	open: true,
-	port: 3001,
+	port: 3003,
     proxy: {
       "/ui/api": {
-		target: "http://localhost:3000",
+		target: "http://localhost:3002",
 		changeOrigin: true
 	  }
     },

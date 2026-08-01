@@ -1,198 +1,82 @@
-import React, { useState } from "react";
-import Form from "react-bootstrap/Form";
-import { Button, Card } from "react-bootstrap";
+import { useState } from "react";
 import apiService from "../../services/api.service";
+import Alert from "../../components/ui/Alert";
+import ProviderFields from "./ProviderFields";
 
-import { Alert } from "react-bootstrap";
-
-export default function IntegrationProfileModal(params) {
-  const { onSave, onClose } = params;
-
-  const [formErrors, setFormErrors] = useState({});
-  const [formInfo, setFormInfo] = useState({});
-  const [integrationForm, setIntegrationForm] = useState({
+export default function NewIntegrationModal({ onSave, onClose }) {
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
     name: "",
     provider: "localfs",
   });
 
   function handleChange({ target }) {
-    setIntegrationForm({ ...integrationForm, [target.name]: target.value });
-  }
-
-  function formIsValid() {
-    const _errors = {};
-
-    if (!integrationForm.name) _errors.error = "name is required";
-
-    if (!integrationForm.provider) _errors.error = "provider is required";
-
-    setFormErrors(_errors);
-
-    return Object.keys(_errors).length === 0;
+    setForm({ ...form, [target.name]: target.value });
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
-    if (!formIsValid()) return;
-
-    console.log(integrationForm)
+    if (!form.name) {
+      setError("Name is required");
+      return;
+    }
     try {
-      await apiService.createintegration(integrationForm);
-      setFormInfo({ message: "Created" });
+      await apiService.createintegration(form);
       onSave();
     } catch (e) {
-      setFormErrors({ error: e.toString() });
+      setError(e.toString());
     }
   }
 
   return (
-    <Form onSubmit={handleSubmit} autoComplete="off">
-      <Card>
-        <Card.Header>
-          <span>New Integration</span>
-        </Card.Header>
-        <Card.Body>
-          <Alert variant="danger" hidden={!formErrors.error}>
-            <Alert.Heading>An Error Occurred</Alert.Heading>
-            <div style={{'white-space': 'pre-wrap'}}>
-              {formErrors.error}
-            </div>
-          </Alert>
+    <form onSubmit={handleSubmit} autoComplete="off">
+      {error && (
+        <Alert kind="error" className="mb-4">
+          <span style={{ whiteSpace: "pre-wrap" }}>{error}</span>
+        </Alert>
+      )}
 
-          <Alert variant="info" hidden={!formInfo.message}>
-            {formInfo.message}
-          </Alert>
+      <div className="field">
+        <label htmlFor="ni-name">Name</label>
+        <input
+          id="ni-name"
+          className="input"
+          placeholder="Integration name"
+          name="name"
+          value={form.name}
+          autoFocus
+          onChange={handleChange}
+        />
+      </div>
 
-          <Form.Label>Name</Form.Label>
-          <Form.Control
-            placeholder="Integration name"
-            value={integrationForm.name}
-            name="name"
-            autofocus
-            onChange={handleChange}
-          />
+      <div className="field">
+        <label htmlFor="ni-provider">Provider</label>
+        <select
+          id="ni-provider"
+          className="select"
+          name="provider"
+          value={form.provider}
+          onChange={handleChange}
+        >
+          <option value="localfs">Directory in file system</option>
+          <option value="ftp">FTP</option>
+          <option value="webdav">WebDAV</option>
+          <option value="dropbox">Dropbox</option>
+          <option value="webhook">Messaging webhook</option>
+          <option value="ics">ICS Calendar</option>
+        </select>
+      </div>
 
-          <Form.Label>Provider</Form.Label>
-          <Form.Select
-            name="provider"
-            value={integrationForm.provider}
-            onChange={handleChange}
-            className="mb-1"
-          >
-            <option value="localfs">Directory in file system</option>
-            <option value="ftp">FTP</option>
-            <option value="webdav">WebDAV</option>
-            <option value="dropbox">Dropbox</option>
-            <option value="webhook">Messaging webhook</option>
-            <option value="ics">ICS Calendar</option>
-          </Form.Select>
+      <ProviderFields form={form} setForm={setForm} />
 
-          {integrationForm.provider === "ics" && (
-            <>
-              <Form.Label>ICS URL</Form.Label>
-              <Form.Control
-                placeholder="https://example.com/calendar.ics"
-                value={integrationForm.address}
-                name="address"
-                onChange={handleChange}
-              />
-              <Form.Check
-                name="insecure"
-                checked={integrationForm.insecure}
-                onChange={({ target }) => setIntegrationForm({ ...integrationForm, [target.name]: target.checked })}
-                label="Ignore TLS certificate errors"
-              />
-            </>
-          )}
-
-          {(integrationForm.provider === "webdav" || integrationForm.provider === "ftp") && (
-            <>
-              <Form.Label>Address</Form.Label>
-              <Form.Control
-                placeholder="Server URL"
-                value={integrationForm.address}
-                name="address"
-                onChange={handleChange}
-              />
-            </>
-          )}
-          {(integrationForm.provider === "webdav" || integrationForm.provider === "ftp") && (
-            <>
-              <Form.Label>Username</Form.Label>
-              <Form.Control
-                placeholder="Username"
-                value={integrationForm.username}
-                name="username"
-                onChange={handleChange}
-              />
-            </>
-          )}
-          {(integrationForm.provider === "webdav" || integrationForm.provider === "ftp") && (
-            <>
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type="password"
-                placeholder="Password"
-                value={integrationForm.password}
-                name="password"
-                onChange={handleChange}
-              />
-            </>
-          )}
-
-          {integrationForm.provider === "ftp" && (
-            <Form.Check
-              name="activetransfers"
-              checked={integrationForm.activetransfers}
-              onChange={({ target }) => setIntegrationForm({ ...integrationForm, [target.name]: target.checked })}
-              label="Use actives transfers"
-            />
-          )}
-
-          {integrationForm.provider === "localfs" && (
-            <>
-              <Form.Label>Path</Form.Label>
-              <Form.Control
-                placeholder="Path"
-                value={integrationForm.path}
-                name="path"
-                onChange={handleChange}
-              />
-            </>
-          )}
-
-          {integrationForm.provider === "dropbox" && (
-            <>
-              <Form.Label>Access Token</Form.Label>
-              <Form.Control
-                placeholder="Access Token"
-                value={integrationForm.accesstoken}
-                name="accesstoken"
-                onChange={handleChange}
-              />
-            </>
-          )}
-
-          {integrationForm.provider === "webhook" && (
-            <>
-              <Form.Label>Endpoint</Form.Label>
-              <Form.Control
-                placeholder="https://automation.domain.tld/webhook/0123-456789-abc"
-                value={integrationForm.endpoint}
-                name="endpoint"
-                onChange={handleChange}
-              />
-            </>
-          )}
-        </Card.Body>
-        <Card.Footer style={{ display: "flex", gap: "15px" }}>
-          <Button variant="primary" type="submit">
-            Save
-          </Button>
-          <Button variant="secondary" onClick={onClose}>Close</Button>
-        </Card.Footer>
-      </Card>
-    </Form>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}>
+        <button type="button" className="btn btn-ghost" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Create integration
+        </button>
+      </div>
+    </form>
   );
 }

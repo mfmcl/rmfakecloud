@@ -1,15 +1,11 @@
-import React, { useState } from "react";
-import Form from "react-bootstrap/Form";
-import { Button, Card } from "react-bootstrap";
+import { useState } from "react";
 import apiService from "../../services/api.service";
+import Alert from "../../components/ui/Alert";
+import ProviderFields from "./ProviderFields";
 
-import { Alert } from "react-bootstrap";
-
-export default function IntegrationModal(params) {
-  const { integration, onSave, headerText, onClose } = params;
-
-  const [formErrors, setFormErrors] = useState({});
-  const [integrationForm, setIntegrationForm] = useState({
+export default function IntegrationModal({ integration, onSave, onClose }) {
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
     name: integration?.Name,
     provider: integration?.Provider,
     email: integration?.email,
@@ -24,197 +20,90 @@ export default function IntegrationModal(params) {
   });
 
   function handleChange({ target }) {
-    setIntegrationForm({ ...integrationForm, [target.name]: target.value });
-  }
-
-  function formIsValid() {
-    const _errors = {};
-
-    if (!integrationForm.name) _errors.error = "name is required";
-
-    setFormErrors(_errors);
-
-    return Object.keys(_errors).length === 0;
+    setForm({ ...form, [target.name]: target.value });
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-
-    if (!formIsValid()) return;
-
+    if (!form.name) {
+      setError("Name is required");
+      return;
+    }
     try {
       await apiService.updateintegration({
         id: integration.ID,
-        name: integrationForm.name,
-        provider: integrationForm.provider,
-        username: integrationForm.username,
-        password: integrationForm.password,
-        address: integrationForm.address,
-        activetransfers: integrationForm?.activetransfers,
-        insecure: integrationForm.insecure,
-        accesstoken: integrationForm.accesstoken,
-        path: integrationForm.path,
-        endpoint: integrationForm.endpoint,
+        name: form.name,
+        provider: form.provider,
+        username: form.username,
+        password: form.password,
+        address: form.address,
+        activetransfers: form?.activetransfers,
+        insecure: form.insecure,
+        accesstoken: form.accesstoken,
+        path: form.path,
+        endpoint: form.endpoint,
       });
       onSave();
     } catch (e) {
-      setFormErrors({ error: e.toString() });
+      setError(e.toString());
     }
   }
 
   if (!integration) return null;
+
   return (
-    <Form onSubmit={handleSubmit}>
-      <Card>
-        <Card.Header>
-          <span>{headerText}</span>
-        </Card.Header>
-        <Card.Body>
-          <div>
-            <Alert variant="danger" hidden={!formErrors.error}>
-              <Alert.Heading>An Error Occurred</Alert.Heading>
-              <div style={{'white-space': 'pre-wrap'}}>
-                {formErrors.error}
-              </div>
-            </Alert>
+    <form onSubmit={handleSubmit}>
+      {error && (
+        <Alert kind="error" className="mb-4">
+          <span style={{ whiteSpace: "pre-wrap" }}>{error}</span>
+        </Alert>
+      )}
 
-            <Form.Label>IntegrationID</Form.Label>
-            <Form.Control
-              className="font-weight-bold"
-              placeholder=""
-              value={integration.ID}
-              disabled
-            />
+      <div className="field">
+        <label>Integration ID</label>
+        <input className="input mono" value={integration.ID} disabled />
+      </div>
 
-            <Form.Label>Provider</Form.Label>
-            <Form.Control
-              as="select"
-              name="provider"
-              value={integrationForm.provider}
-              onChange={handleChange}
-            >
-              <option value="localfs">Directory in file system</option>
-              <option value="webdav">WebDAV</option>
-              <option value="ftp">FTP</option>
-              <option value="dropbox">Dropbox</option>
-              <option value="webhook">Messaging webhook</option>
-              <option value="ics">ICS Calendar</option>
-            </Form.Control>
+      <div className="field">
+        <label htmlFor="im-provider">Provider</label>
+        <select
+          id="im-provider"
+          className="select"
+          name="provider"
+          value={form.provider}
+          onChange={handleChange}
+        >
+          <option value="localfs">Directory in file system</option>
+          <option value="webdav">WebDAV</option>
+          <option value="ftp">FTP</option>
+          <option value="dropbox">Dropbox</option>
+          <option value="webhook">Messaging webhook</option>
+          <option value="ics">ICS Calendar</option>
+        </select>
+      </div>
 
-            <Form.Label>Name</Form.Label>
-            <Form.Control
-              placeholder="Integration name"
-              value={integrationForm.name}
-              name="name"
-              onChange={handleChange}
-            />
+      <div className="field">
+        <label htmlFor="im-name">Name</label>
+        <input
+          id="im-name"
+          className="input"
+          placeholder="Integration name"
+          name="name"
+          value={form.name || ""}
+          onChange={handleChange}
+        />
+      </div>
 
-            {(integrationForm.provider === "webdav" || integrationForm.provider === "ftp") && (
-              <>
-                <Form.Label>Address</Form.Label>
-                <Form.Control
-                  placeholder="Server URL"
-                  value={integrationForm.address}
-                  name="address"
-                  onChange={handleChange}
-                />
-              </>
-            )}
-            {(integrationForm.provider === "webdav" || integrationForm.provider === "ftp") && (
-              <>
-                <Form.Label>Username</Form.Label>
-                <Form.Control
-                  placeholder="Username"
-                  value={integrationForm.username}
-                  name="username"
-                  onChange={handleChange}
-                />
-              </>
-            )}
-            {(integrationForm.provider === "webdav" || integrationForm.provider === "ftp") && (
-              <>
-                <Form.Label>Password</Form.Label>
-                <Form.Control
-                  type="password"
-                  placeholder="Password"
-                  value={integrationForm.password}
-                  name="password"
-                  onChange={handleChange}
-                />
-              </>
-            )}
+      <ProviderFields form={form} setForm={setForm} />
 
-            {integrationForm.provider === "ftp" && (
-              <Form.Check
-                name="activetransfers"
-                checked={integrationForm.activetransfers}
-                onChange={({ target }) => setIntegrationForm({ ...integrationForm, [target.name]: target.checked })}
-                label="Use actives transfers"
-              />
-            )}
-
-            {integrationForm.provider === "ics" && (
-              <>
-                <Form.Label>ICS URL</Form.Label>
-                <Form.Control
-                  placeholder="https://example.com/calendar.ics"
-                  value={integrationForm.address}
-                  name="address"
-                  onChange={handleChange}
-                />
-                <Form.Check
-                  name="insecure"
-                  checked={integrationForm.insecure}
-                  onChange={({ target }) => setIntegrationForm({ ...integrationForm, [target.name]: target.checked })}
-                  label="Ignore TLS certificate errors"
-                />
-              </>
-            )}
-
-            {integrationForm.provider === "localfs" && (
-              <>
-                <Form.Label>Path</Form.Label>
-                <Form.Control
-                  placeholder="Path"
-                  value={integrationForm.path}
-                  name="path"
-                  onChange={handleChange}
-                />
-              </>
-            )}
-
-            {integrationForm.provider === "dropbox" && (
-              <>
-                <Form.Label>Access Token</Form.Label>
-                <Form.Control
-                  placeholder="Access Token"
-                  value={integrationForm.accesstoken}
-                  name="accesstoken"
-                  onChange={handleChange}
-                />
-              </>
-            )}
-
-            {integrationForm.provider === "webhook" && (
-              <>
-                <Form.Label>Endpoint</Form.Label>
-                <Form.Control
-                  placeholder="https://automation.domain.tld/webhook/0123-456789-abc"
-                  value={integrationForm.endpoint}
-                  name="endpoint"
-                  onChange={handleChange}
-                />
-              </>
-            )}
-          </div>
-        </Card.Body>
-        <Card.Footer style={{ display: "flex", flex: "10", gap: "15px" }}>
-          <Button variant="primary" type="submit">
-            Save
-          </Button>
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        </Card.Footer>
-      </Card>
-    </Form>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 20 }}>
+        <button type="button" className="btn btn-ghost" onClick={onClose}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Save changes
+        </button>
+      </div>
+    </form>
   );
 }

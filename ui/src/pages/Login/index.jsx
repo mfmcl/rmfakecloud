@@ -1,69 +1,86 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useHistory } from "react-router-dom";
-import { Button, Form } from "react-bootstrap";
+import { NotebookPen } from "lucide-react";
 
 import { useAuthState } from "../../common/useAuthContext";
 import { loginUser } from "../../common/actions";
-
-import styles from "./Login.module.scss";
+import Alert from "../../components/ui/Alert";
 
 const Login = () => {
-  let history = useHistory();
+  const history = useHistory();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const { state, dispatch } = useAuthState(); //read the values of loading and errorMessage from context
+  const { state, dispatch } = useAuthState();
   const { errorMessage, loading } = state;
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
-    let payload = { email: username, password };
     try {
-      await loginUser(dispatch, payload);
-      history.push("/documents"); //TODO: usenavigate or return redirect
+      await loginUser(dispatch, { email: username, password });
+      history.push("/");
     } catch (error) {
       console.log(error);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.formContainer}>
-        {errorMessage ? <p className={styles.error}>{errorMessage}</p> : null}
+    <div className="auth-wrap">
+      <div className="auth-brand">
+        <span className="brand-mark">
+          <NotebookPen />
+        </span>
+        <div>
+          <h1>rmfakecloud</h1>
+          <div className="sub">Your own paper cloud</div>
+        </div>
+      </div>
 
-        <Form>
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="username">Username</Form.Label>
-            <Form.Control
+      <div className="card card-pad auth-card">
+        <form onSubmit={handleLogin}>
+          {errorMessage && (
+            <Alert kind="error" className="mb-3" title="Sign in failed">
+              {errorMessage}
+            </Alert>
+          )}
+
+          <div className="field">
+            <label htmlFor="username">Username</label>
+            <input
+              className="input"
               id="username"
               value={username}
               autoFocus
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
-              placeholder="Username" 
+              placeholder="Username"
               autoComplete="username"
-              />
-          </Form.Group>
+            />
+          </div>
 
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="password">Password</Form.Label>
-            <Form.Control
+          <div className="field">
+            <label htmlFor="password">Password</label>
+            <input
+              className="input"
               type="password"
               id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
-              placeholder="Password" 
+              placeholder="Password"
               autoComplete="current-password"
-              />
-          </Form.Group>
+            />
+          </div>
 
-          <Button type="submit" onClick={handleLogin} disabled={loading}>
-            Login
-          </Button>
-        </Form>
-
+          <button
+            type="submit"
+            className="btn btn-primary btn-lg btn-block"
+            disabled={loading}
+            onClick={handleLogin}
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
-import Button from "react-bootstrap/Button";
-import Container from "react-bootstrap/Container";
-import ListGroup from "react-bootstrap/ListGroup";
+import { KeyRound } from "lucide-react";
 
 import apiservice from "../services/api.service";
 import { useAuthState } from "../common/useAuthContext";
 
 export default function PasscodeResets() {
-  const { state: { user } } = useAuthState();
+  const {
+    state: { user },
+  } = useAuthState();
   const [resets, setResets] = useState([]);
   const [error, setError] = useState("");
 
   const load = () => {
     apiservice
       .listPasscodeResets()
-      .then((list) => setResets(list || []))
+      .then((list) => setResets(Array.isArray(list) ? list : []))
       .catch((e) => setError(e.toString()));
   };
 
@@ -26,6 +26,7 @@ export default function PasscodeResets() {
     load();
     const id = setInterval(load, 5000);
     return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const approve = (uuid) => {
@@ -42,45 +43,41 @@ export default function PasscodeResets() {
       .catch((e) => setError(e.toString()));
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
   if (error) {
     return (
-      <Container fluid className="pt-3">
-        <div className="alert alert-danger mb-0">{error}</div>
-      </Container>
+      <div className="passcode-list">
+        <div className="alert alert-error">
+          <KeyRound />
+          <div>{error}</div>
+        </div>
+      </div>
     );
   }
-  if (resets.length === 0) {
-    return null;
-  }
+  if (resets.length === 0) return null;
 
   return (
-    <Container fluid className="pt-3">
-      <ListGroup className="mb-0">
-        {resets.map((r) => (
-          <ListGroup.Item
-            key={r.RequestID}
-            className="d-flex justify-content-between align-items-center"
-          >
+    <div className="passcode-list">
+      {resets.map((r) => (
+        <div className="passcode-item" key={r.RequestID}>
+          <div>
             <div>
-              <div><strong>Passcode reset requested</strong> — {r.DeviceName || "device"}</div>
-              <small className="text-muted">
-                {r.DeviceID} &middot; {new Date(r.Created).toLocaleString()}
-              </small>
+              <strong>Passcode reset requested</strong> — {r.DeviceName || "device"}
             </div>
-            <div className="d-flex gap-2">
-              <Button variant="outline-secondary" onClick={() => dismiss(r.RequestID)}>
-                Dismiss
-              </Button>
-              <Button variant="primary" onClick={() => approve(r.RequestID)}>
-                Approve
-              </Button>
+            <div className="faint mono" style={{ fontSize: "var(--text-xs)" }}>
+              {r.DeviceID} · {new Date(r.Created).toLocaleString()}
             </div>
-          </ListGroup.Item>
-        ))}
-      </ListGroup>
-    </Container>
+          </div>
+          <div className="actions">
+            <button className="btn btn-outline btn-sm" onClick={() => dismiss(r.RequestID)}>
+              Dismiss
+            </button>
+            <button className="btn btn-primary btn-sm" onClick={() => approve(r.RequestID)}>
+              Approve
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -1,43 +1,28 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Form, InputGroup, Button } from "react-bootstrap";
-import { FaEye } from "react-icons/fa";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 function PasswordField(props) {
   const [inputType, setInputType] = useState("password");
-  const [inputCursorPosition, setInputCursorPosition] = useState(0);
-  const inputEl = useRef(null);
-
-  function showHide(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    setInputType(inputType === "text" ? "password" : "text");
-    inputEl.current.focus();
-  }
-
-  useEffect(() => {
-    const init = () => {
-      inputEl.current.selectionStart = inputCursorPosition;
-    };
-    init();
-  }, [inputType, inputCursorPosition]);
-
-  function saveCursorPosition(e) {
-    setInputCursorPosition(e.target.selectionStart);
-  }
 
   return (
-    <InputGroup className="mb-3">
-      <Form.Control
+    <div style={{ position: "relative" }}>
+      <input
+        className="input"
+        style={{ paddingRight: 40 }}
         type={inputType}
-        {...props}
-        ref={inputEl}
-        onBlur={saveCursorPosition}
         autoComplete="new-password"
+        {...props}
       />
-      <Button onClick={showHide}>
-        <FaEye />
-      </Button>
-    </InputGroup>
+      <button
+        type="button"
+        className="icon-btn sm"
+        onClick={() => setInputType((t) => (t === "text" ? "password" : "text"))}
+        style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)" }}
+        aria-label={inputType === "text" ? "Hide password" : "Show password"}
+      >
+        {inputType === "text" ? <EyeOff /> : <Eye />}
+      </button>
+    </div>
   );
 }
 

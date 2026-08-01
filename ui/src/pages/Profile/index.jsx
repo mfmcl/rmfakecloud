@@ -1,23 +1,37 @@
-import Container from "react-bootstrap/Container";
-import Stack from "react-bootstrap/Stack";
 import { useAuthState } from "../../common/useAuthContext";
-
 import ResetPassword from "./ResetPassword";
 
-const Home = () => {
-  const { state: { user } } = useAuthState();
+const Profile = () => {
+  const {
+    state: { user },
+  } = useAuthState();
+
   return (
-    <Container fluid>
-      <Stack>
-        <div>
-          {user.scopes === "sync15" && (<span>Using sync 15</span>)}
-        </div>
-        <div>
+    <div className="page page-narrow">
+      <div className="page-inner">
+        <header className="page-head">
+          <span className="eyebrow">Account</span>
+          <h1>Profile</h1>
+          <p className="lede">
+            Signed in as <strong>{user.UserID}</strong>
+            {user.scopes === "sync15" && (
+              <>
+                {" "}
+                <span className="badge">sync 1.5</span>
+              </>
+            )}
+          </p>
+        </header>
+
+        <div className="card card-pad">
+          <h3 style={{ marginBottom: "var(--sp-4)", fontFamily: "var(--font-ui)", fontWeight: 600, fontSize: "var(--text-base)" }}>
+            Change password
+          </h3>
           <ResetPassword />
         </div>
-      </Stack>
-    </Container>
+      </div>
+    </div>
   );
 };
 
-export default Home;
+export default Profile;

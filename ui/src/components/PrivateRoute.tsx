@@ -1,10 +1,9 @@
 import React from "react";
 import { Route, Redirect } from "react-router-dom";
-import { logout } from "../common/actions";
 import { useAuthState } from "../common/useAuthContext";
 
 type RouteProp = {
-  component: React.FC<any>;
+  component: React.ComponentType<Record<string, unknown>>;
   roles?: string[];
   exact?: boolean;
   path: string;
@@ -15,7 +14,7 @@ export const PrivateRoute = ({
   roles,
   ...rest
 }: RouteProp) => {
-  const { state:{user}, dispatch } = useAuthState(); //read the values of loading and errorMessage from context
+  const { state:{user} } = useAuthState(); //read the values of loading and errorMessage from context
   return (
     <Route
       {...rest}
@@ -31,9 +30,8 @@ export const PrivateRoute = ({
 
         // check if route is restricted by role
         if (roles && user.Roles && roles.indexOf(user.Roles[0]) === -1) {
-          // role not authorised ==> logout
-          logout(dispatch);
-          return <Redirect to={{ pathname: "/login" }} />;
+          // role not authorised ==> send them back home
+          return <Redirect to={{ pathname: "/" }} />;
         }
 
         // authorised so return component

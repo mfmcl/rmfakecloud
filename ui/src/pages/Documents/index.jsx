@@ -1,261 +1,459 @@
-import DocumentTree from "./Tree";
-import apiservice from "../../services/api.service"
-import { useEffect, useRef, useState } from "react";
-import { useParams, useHistory } from "react-router-dom";
-import { Container, Row, Col } from "react-bootstrap";
-import File from "./File";
-import Folder from "./Folder";
-import Navbar from 'react-bootstrap/Navbar';
-import { BsSearch } from "react-icons/bs";
-import Form from 'react-bootstrap/Form';
-import Button from 'react-bootstrap/Button';
-import InputGroup from 'react-bootstrap/InputGroup';
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useHistory, useParams } from "react-router-dom";
+import { useDropzone } from "react-dropzone";
 import { toast } from "react-toastify";
-import { useAuthState } from "../../common/useAuthContext";
+import {
+  ChevronRight,
+  Download,
+  FolderPlus,
+  House,
+  LayoutGrid,
+  List,
+  Search,
+  Trash2,
+  Upload as UploadIcon,
+} from "lucide-react";
 
-import styles from "./Documents.module.scss";
+import apiservice from "../../services/api.service";
+import { uploadFilesInBatches } from "../../common/upload";
+import Dropdown from "../../components/ui/Dropdown";
+import EmptyState from "../../components/ui/EmptyState";
+import Modal from "../../components/ui/Modal";
+import Spinner from "../../components/ui/Spinner";
+import { FolderSearch } from "lucide-react";
 
-export default function DocumentList() {
-  const [selected, setSelected] = useState(null);
-  const [term, setTerm] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
-  const [counter, setCounter] = useState(0);
-  const [entries, setEntries] = useState([])
-  const [initialSelectionSet, setInitialSelectionSet] = useState(false);
-  const [treeHeight, setTreeHeight] = useState(700);
+import { collectFiles, composeTree, findById, pathLabel } from "./tree-utils";
+import FolderTree from "./FolderTree";
+import Listing from "./Listing";
+import FilePreview from "./FilePreview";
 
+const ACCEPT = {
+  "application/pdf": [],
+  "application/zip": [".zip", ".rmdoc"],
+  "application/epub+zip": [],
+};
+
+export default function Documents() {
   const { itemId } = useParams();
   const history = useHistory();
-  const { state: { user } } = useAuthState();
 
-  const treeRef = useRef(null);
-  const treeContainerRef = useRef(null);
-  const lastSelectedId = useRef(null);
+  const [tree, setTree] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [reloadCount, setReloadCount] = useState(0);
+  const reload = useCallback(() => setReloadCount((c) => c + 1), []);
 
+  const [term, setTerm] = useState("");
+  const [view, setView] = useState(() => localStorage.getItem("rmf-view") || "list");
+  const [checked, setChecked] = useState(() => new Set());
+  const [uploading, setUploading] = useState(false);
+  const [showNewFolder, setShowNewFolder] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+
+  const selectedId = itemId || "root";
+
+  // ----- data -----------------------------------------------------------
   useEffect(() => {
-    lastSelectedId.current = selected?.id || null;
-  }, [selected]);
+    let cancelled = false;
+    apiservice
+      .listDocument()
+      .then((data) => {
+        if (!cancelled) setTree(composeTree(data));
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setLoadError(e);
+          toast.error(e.toString());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadCount]);
 
+  const found = useMemo(() => {
+    if (!tree) return null;
+    return findById(tree.root, selectedId) || findById(tree.trash, selectedId);
+  }, [tree, selectedId]);
+
+  // Redirect when the URL points at something that no longer exists
   useEffect(() => {
-    if (lastSelectedId.current && treeRef.current && typeof treeRef.current.get === 'function') {
-      const node = treeRef.current.get(lastSelectedId.current);
-      if (node && node !== selected) {
-        setSelected(node);
-      }
+    if (tree && itemId && !found) {
+      toast.warning("Item not found — back to My Files");
+      history.replace("/documents");
     }
-  }, [entries]);
+  }, [tree, itemId, found, history]);
 
-  const toggleNode = (node) => {
-    if (node == null) {
-      return
-    }
-    if (typeof node.toggle !== 'function') {
-      return
-    }
+  // Clear transient state when navigating
+  useEffect(() => {
+    setChecked(new Set());
+    setTerm("");
+  }, [selectedId]);
 
-    node.toggle()
-  }
-
-  // select from tree. node must extend NodeApi from react-arborist
-  const onSelect = (node) => {
-    setSelected(node);
-    toggleNode(node);
-
-    // Update URL with selected item ID
-    if (node && node.id) {
-      // Don't add root and trash to URL, keep as /documents
-      if (node.id === 'root' || node.id === 'trash') {
-        history.push('/documents');
+  // ----- navigation -----------------------------------------------------
+  const navigateTo = useCallback(
+    (node) => {
+      if (!node) return;
+      if (node.id === "root" || node.id === "trash") {
+        history.push("/documents");
       } else {
         history.push(`/documents/${node.id}`);
       }
+    },
+    [history]
+  );
+
+  const changeView = (v) => {
+    setView(v);
+    localStorage.setItem("rmf-view", v);
+  };
+
+  // ----- selection helpers ----------------------------------------------
+  const node = found?.node || null;
+  const trail = found?.trail || [];
+  const isFolder = !!node?.isFolder;
+  const inTrash = trail[0]?.id === "trash";
+  const searching = term.trim().length > 0;
+
+  // The folder uploads should land in
+  const uploadTarget = !node
+    ? "root"
+    : isFolder
+      ? node.id
+      : trail.length > 1
+        ? trail[trail.length - 2].id
+        : "root";
+
+  const entries = useMemo(() => {
+    if (!node) return [];
+    if (searching) {
+      const q = term.trim().toLowerCase();
+      return collectFiles(tree.root)
+        .filter(({ file }) => file.name.toLowerCase().includes(q))
+        .map(({ file, trail }) => ({ ...file, _trail: trail }));
+    }
+    return isFolder ? node.children || [] : [];
+  }, [node, searching, term, tree, isFolder]);
+
+  const searchPaths = useMemo(() => {
+    if (!searching) return null;
+    const map = {};
+    entries.forEach((e) => {
+      map[e.id] = pathLabel(e._trail) || "My Files";
+    });
+    return map;
+  }, [entries, searching]);
+
+  // ----- actions ----------------------------------------------------------
+  const onDropFiles = async (files) => {
+    if (!files.length) return;
+    try {
+      setUploading(true);
+      await uploadFilesInBatches(files, uploadTarget);
+      toast.success(
+        files.length === 1 ? "File uploaded" : `${files.length} files uploaded`
+      );
+      reload();
+    } catch (e) {
+      toast.error("Upload error: " + e.toString());
+    } finally {
+      setUploading(false);
     }
   };
 
-  const onUpdate = () => {
-    setCounter(prev => prev+1);
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
+    onDropAccepted: onDropFiles,
+    accept: ACCEPT,
+    maxSize: 1024 * 1024 * 1024,
+    noClick: true,
+    noKeyboard: true,
+    disabled: uploading,
+  });
+
+  const onCreateFolder = async () => {
+    if (!folderName.trim()) return;
+    try {
+      await apiservice.createFolder({ name: folderName.trim(), parentId: selectedId });
+      setFolderName("");
+      setShowNewFolder(false);
+      reload();
+    } catch (e) {
+      toast.error(e.toString());
+    }
   };
 
-  useEffect(() => {
-    // Only auto-select first item if there's no itemId in URL
-    if (
-      !initialSelectionSet &&
-      !itemId &&
-      selected === null &&
-      treeRef.current &&
-      treeRef.current.root &&
-      treeRef.current.root.children[0]
-    ) {
-      setSelected(treeRef.current.root.children[0]);
-      setInitialSelectionSet(true);
+  const onDelete = async () => {
+    setShowDelete(false);
+    const ids = [...checked];
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await apiservice.deleteDocument(id);
+      } catch (e) {
+        failed += 1;
+      }
     }
-  }, [entries, selected, initialSelectionSet, itemId]);
+    if (failed) toast.error(`Failed to delete ${failed} item(s)`);
+    else toast.success(ids.length === 1 ? "Deleted 1 item" : `Deleted ${ids.length} items`);
+    setChecked(new Set());
+    reload();
+  };
 
-  useEffect(() => {
-    const resizeObserver = new ResizeObserver((event) => {
-      setTreeHeight(event[0].contentBoxSize[0].blockSize);
+  const onDownload = (exportType) => {
+    const ext = exportType === "rmdoc" ? ".rmdoc" : ".pdf";
+    apiservice
+      .download(node.id, exportType)
+      .then((blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = node.name + ext;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      })
+      .catch((e) => toast.error("Download failed: " + e.message));
+  };
+
+  const toggleCheck = (id) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
     });
 
-    if (treeContainerRef.current) {
-      resizeObserver.observe(treeContainerRef.current);
-    }
+  const toggleAll = () =>
+    setChecked((prev) =>
+      prev.size === entries.length ? new Set() : new Set(entries.map((e) => e.id))
+    );
 
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
+  // ----- render -----------------------------------------------------------
+  if (loadError) {
+    return (
+      <div className="page">
+        <div className="page-inner">
+          <EmptyState icon={FolderSearch} title="Couldn't load your files">
+            {loadError.toString()}
+          </EmptyState>
+        </div>
+      </div>
+    );
+  }
 
-	useEffect(() => {
-		const loadDocs = async () => {
-			const { Trash, Entries } = await apiservice.listDocument()
+  if (!tree) {
+    return (
+      <div className="page-fill">
+        <Spinner label="Loading your library…" />
+      </div>
+    );
+  }
 
-			const root = {
-				id: "root",
-				name: "My Files",
-				isFolder: true,
-				icon: "device",
-				children: Entries,
-			}
-			const trash = {
-				id: "trash",
-				name: "Trash",
-				isFolder: true,
-				icon: "trash",
-				children: Trash,
-			}
-			setEntries([root, trash]);
-		}
-
-		loadDocs().catch(e => toast.error(e));
-	},[counter])
-
-  // Helper function to recursively search for an item by ID in the tree
-  // Returns both the item and its parent chain
-  const findItemInEntries = (entries, targetId, parent = null) => {
-    for (const entry of entries) {
-      if (entry.id === targetId) {
-        return { item: entry, parent };
-      }
-      if (entry.children && entry.children.length > 0) {
-        const found = findItemInEntries(entry.children, targetId, entry);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-
-  // Helper to build parent chain for breadcrumb
-  const buildParentChain = (parentItem) => {
-    if (!parentItem) return null;
-
-    const parentNode = {
-      id: parentItem.id,
-      data: parentItem,
-      isLeaf: !parentItem.isFolder,
-      isRoot: parentItem.id === 'root' || parentItem.id === 'trash',
-      // Add a dummy toggle function for compatibility
-      toggle: () => {},
-    };
-
-    // If this parent is not root/trash, try to find its parent
-    if (parentItem.id !== 'root' && parentItem.id !== 'trash') {
-      const grandparentResult = findItemInEntries(entries, parentItem.id);
-      if (grandparentResult && grandparentResult.parent) {
-        parentNode.parent = buildParentChain(grandparentResult.parent);
-      }
-    } else {
-      // This is root or trash - add the internal react-arborist root above it
-      parentNode.parent = {
-        id: '__REACT_ARBORIST_INTERNAL_ROOT__',
-        data: { id: '__REACT_ARBORIST_INTERNAL_ROOT__', name: '' },
-        isLeaf: false,
-        parent: null,
-      };
-    }
-
-    return parentNode;
-  };
-
-  // Handle URL navigation: restore selection from URL parameter
-  useEffect(() => {
-    // Only proceed if we have entries and an itemId
-    if (!entries.length || !itemId || initialSelectionSet) {
-      return;
-    }
-
-    // Find the item in our data
-    const result = findItemInEntries(entries, itemId);
-
-    if (!result) {
-      // Item doesn't exist in our data
-      toast.warning(`Item not found, returning to root`);
-      history.push('/documents');
-      return;
-    }
-
-    const { item: foundItem, parent: parentItem } = result;
-
-    // Create a pseudo-node object that matches what onSelect expects
-    // React-arborist wraps the data, so the node has both top-level properties
-    // and a 'data' property containing the actual item
-    const pseudoNode = {
-      id: foundItem.id,
-      data: foundItem,
-      isLeaf: !foundItem.isFolder,
-      children: (foundItem.children || []).map(child => ({
-        id: child.id,
-        data: child,
-        isLeaf: !child.isFolder,
-      })),
-      parent: parentItem ? buildParentChain(parentItem) : null,
-      isRoot: foundItem.id === 'root' || foundItem.id === 'trash',
-    };
-
-    // Set the selection directly
-    setSelected(pseudoNode);
-    setInitialSelectionSet(true);
-
-    // Try to open parent folders in the tree if possible
-    if (treeRef.current && typeof treeRef.current.openParents === 'function') {
-      // Give tree a moment to render, then open parents
-      setTimeout(() => {
-        if (treeRef.current && typeof treeRef.current.openParents === 'function') {
-          treeRef.current.openParents(itemId);
-        }
-      }, 100);
-    }
-  }, [entries, itemId, initialSelectionSet]);
+  const crumbs = searching
+    ? null
+    : trail.map((n, i) => {
+        const last = i === trail.length - 1;
+        return (
+          <span key={n.id} style={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}>
+            {i > 0 && <ChevronRight className="crumb-sep" />}
+            <button
+              className={`crumb ${last ? "current" : ""}`}
+              onClick={() => !last && navigateTo(n)}
+            >
+              {i === 0 && n.id === "root" && <House />}
+              {n.name}
+            </button>
+          </span>
+        );
+      });
 
   return (
-    <Container fluid style={{height: "100%", display: "flex", flexDirection: "column", overflow: "hidden", padding: "25px 0 20px 0"}}>
-        <Row style={{flex: "1 1 auto", minHeight: 0}}>
-          <Col md={4} style={{display: "flex", flexDirection: "column", height: "100%"}}>
-            <Navbar style={{flexShrink: 0}}>
-              <div className={`${styles.stretch} ${styles.userid}`}>{user.UserID}</div>
-              <Button variant="outline" onClick={() => { setShowSearch(!showSearch); setTerm("") }}><BsSearch/></Button>
-            </Navbar>
-
-            {showSearch && <div style={{flexShrink: 0}}>
-              <InputGroup className="mb-3">
-                <InputGroup.Text>
-                  <BsSearch />
-                </InputGroup.Text>
-
-                <Form.Control autoFocus size="sm" type="text" value={term} onChange={(e) => { setTerm(e.currentTarget.value); }} />
-              </InputGroup>
-            </div>}
-
-            <div ref={treeContainerRef} className={styles.treeContainer} style={{flex: "1 1 auto", minHeight: 0, overflow: "auto"}}>
-              <DocumentTree selection={selected} onSelect={onSelect} treeRef={treeRef} term={term} entries={entries} height={treeHeight} />
+    <div className="page-fill">
+      <div className="docs">
+        <aside className="docs-side">
+          <div className="docs-side-head">
+            <div className="search-box">
+              <Search />
+              <input
+                className="input"
+                placeholder="Search files…"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+              />
             </div>
-          </Col>
-          <Col md={8} style={{display: "flex", flexDirection: "column", height: "100%"}}>
-            <div style={{flex: "1 1 auto", minHeight: 0, overflow: "auto"}}>
-              {selected && selected.isLeaf && <File file={selected} onSelect={onSelect} />}
-              {selected && !selected.isLeaf && <Folder selection={selected} onSelect={onSelect} onUpdate={onUpdate} counter={counter} />}
+          </div>
+          <FolderTree
+            root={tree.root}
+            trash={tree.trash}
+            selectedId={selectedId}
+            onSelect={navigateTo}
+          />
+        </aside>
+
+        <section className="docs-main">
+          <div className="docs-toolbar">
+            {searching ? (
+              <span className="muted" style={{ fontSize: "var(--text-sm)" }}>
+                {entries.length} result{entries.length === 1 ? "" : "s"} for “{term.trim()}”
+              </span>
+            ) : (
+              <nav className="crumbs" aria-label="Breadcrumb">
+                {crumbs}
+              </nav>
+            )}
+
+            <div className="spacer" />
+
+            <div className="search-box docs-mobile-search">
+              <Search />
+              <input
+                className="input"
+                placeholder="Search files…"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+              />
             </div>
-          </Col>
-        </Row>
-    </Container>
+
+            {!node?.isFolder && node && (
+              <Dropdown
+                toggle={({ toggle }) => (
+                  <button className="icon-btn bordered" onClick={toggle} title="Download">
+                    <Download />
+                  </button>
+                )}
+              >
+                <button className="dropdown-item" onClick={() => onDownload()}>
+                  Download PDF
+                </button>
+                <button className="dropdown-item" onClick={() => onDownload("rmdoc")}>
+                  Download .rmdoc
+                </button>
+              </Dropdown>
+            )}
+
+            {checked.size > 0 && (
+              <button className="btn btn-danger btn-sm" onClick={() => setShowDelete(true)}>
+                <Trash2 /> Delete ({checked.size})
+              </button>
+            )}
+
+            {isFolder && !inTrash && (
+              <>
+                <button
+                  className="icon-btn bordered"
+                  onClick={() => setShowNewFolder(true)}
+                  title="New folder"
+                >
+                  <FolderPlus />
+                </button>
+                <button
+                  className="icon-btn bordered"
+                  onClick={open}
+                  title="Upload files"
+                  disabled={uploading}
+                >
+                  {uploading ? <span className="spinner sm" /> : <UploadIcon />}
+                </button>
+              </>
+            )}
+
+            {isFolder && (
+              <div className="segmented" role="group" aria-label="View">
+                <button onClick={() => changeView("list")} aria-pressed={view === "list"} title="List view">
+                  <List />
+                </button>
+                <button onClick={() => changeView("grid")} aria-pressed={view === "grid"} title="Grid view">
+                  <LayoutGrid />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="docs-body" {...getRootProps()}>
+            <input {...getInputProps()} />
+            {isDragActive && <div className="docs-drop-veil">Drop files to upload</div>}
+
+            {node && !isFolder && <FilePreview file={node} />}
+
+            {isFolder && entries.length > 0 && (
+              <Listing
+                view={view}
+                entries={entries}
+                checked={checked}
+                onToggleCheck={toggleCheck}
+                onToggleAll={toggleAll}
+                onOpen={navigateTo}
+                subtitle={
+                  searching ? (entry) => searchPaths?.[entry.id] : undefined
+                }
+              />
+            )}
+
+            {isFolder && entries.length === 0 && (
+              <EmptyState
+                icon={searching ? Search : FolderPlus}
+                title={searching ? "No matches" : "This folder is empty"}
+              >
+                {searching
+                  ? `Nothing in your library matches “${term.trim()}”.`
+                  : "Drag files here, or use the upload button to add PDFs and EPUBs."}
+              </EmptyState>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <Modal
+        open={showNewFolder}
+        onClose={() => setShowNewFolder(false)}
+        title="New folder"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowNewFolder(false)}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={onCreateFolder} disabled={!folderName.trim()}>
+              Create folder
+            </button>
+          </>
+        }
+      >
+        <div className="field">
+          <label htmlFor="folder-name">Folder name</label>
+          <input
+            id="folder-name"
+            className="input"
+            autoFocus
+            value={folderName}
+            onChange={(e) => setFolderName(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onCreateFolder()}
+            placeholder="e.g. Notebooks"
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={showDelete}
+        onClose={() => setShowDelete(false)}
+        title="Delete selected items?"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowDelete(false)}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={onDelete}>
+              Delete {checked.size} item{checked.size === 1 ? "" : "s"}
+            </button>
+          </>
+        }
+      >
+        <p className="muted" style={{ margin: 0 }}>
+          {inTrash
+            ? "Items in the trash will be permanently deleted."
+            : "Selected items will be moved to the trash."}
+        </p>
+      </Modal>
+    </div>
   );
 }

@@ -1,116 +1,142 @@
-import React, {useState} from "react";
+import { useState } from "react";
+import { toast } from "react-toastify";
+import { Blocks, Plus, Trash2 } from "lucide-react";
+
 import useFetch from "../../hooks/useFetch";
-import Spinner from "../../components/Spinner";
-import {Alert, Button, Card, Container, Modal, Table} from "react-bootstrap";
+import apiService from "../../services/api.service";
+import Spinner from "../../components/ui/Spinner";
+import Alert from "../../components/ui/Alert";
+import EmptyState from "../../components/ui/EmptyState";
+import Modal from "../../components/ui/Modal";
 import IntegrationModal from "./IntegrationModal";
 import NewIntegrationModal from "./NewIntegrationModal";
-import apiService from "../../services/api.service";
-import { toast } from "react-toastify";
-const integrationListUrl = "integrations";
 
-const NewIntegration = 1;
-const UpdateIntegration = 2;
+interface Integration {
+  ID: string;
+  Name: string;
+  Provider: string;
+}
+
+const providerLabels: Record<string, string> = {
+  localfs: "File system",
+  webdav: "WebDAV",
+  ftp: "FTP",
+  dropbox: "Dropbox",
+  webhook: "Webhook",
+  ics: "ICS Calendar",
+};
+
 const Integrations = () => {
   const [index, setIndex] = useState(0);
-  const { data: integrationList, error, loading } = useFetch(`${integrationListUrl}`, index);
-  const [ state, setState ] = useState({showModal: 0, modalIntegration: null});
-  const refresh = () =>{
-    setIndex(previous => previous+1)
-  }
+  const { data: integrationList, error, loading } = useFetch("integrations", index);
+  const [editing, setEditing] = useState<Integration | null>(null);
+  const [creating, setCreating] = useState(false);
 
-  function openModal(index: number) {
-    if (!integrationList) return;
-    const integration = integrationList[index];
-    setState({
-      showModal: UpdateIntegration,
-      modalIntegration: integration,
-    });
-  }
-  function closeModal() {
-    setState({
-      showModal: 0,
-      modalIntegration: null,
-    });
-  }
+  const refresh = () => setIndex((i) => i + 1);
 
-  if (loading) {
-    return <Spinner />
-  }
-
-  if (error) {
-    return (
-        <Alert variant="danger">
-            <Alert.Heading>An Error Occurred</Alert.Heading>
-            {`Error ${error.status}: ${error.statusText}`}
-        </Alert>
-    );
-  }
-
-  const newIntegration = e => {
-    setState({
-      showModal: NewIntegration,
-      modalIntegration: null
-    });
-  }
-
-  const onSave  = () => {
-    closeModal();
+  const onSave = () => {
+    setEditing(null);
+    setCreating(false);
     refresh();
-  }
+  };
 
-  const remove = async (e, id, name) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (!window.confirm(`Are you sure you want to delete integration: ${name}?`))
-      return false
-
-    try{
-      await apiService.deleteintegration(id)
-      refresh()
-    } catch(e){
-        toast.error('Error:'+ e)
+  const remove = async (e: React.MouseEvent, id: string, name: string) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to delete integration: ${name}?`)) return;
+    try {
+      await apiService.deleteintegration(id);
+      toast.success(`Deleted ${name}`);
+      refresh();
+    } catch (e) {
+      toast.error("Error: " + e);
     }
-  }
+  };
 
   return (
-    <Container>
-      <h3>Integrations</h3>
-      <Card>
-        <Table striped bordered hover className="mb-0">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>IntegrationId</th>
-              <th>Name</th>
-              <th>Provider</th>
-              <th><Button onClick={newIntegration}>New Integration</Button></th>
-            </tr>
-          </thead>
-          <tbody>
-            {!integrationList.length && (
-              <tr>
-                <td colSpan={5} className="text-center">No integration</td>
-              </tr>
-            )}
-            {integrationList.map((i, index) => (
-              <tr key={i.ID} onClick={() => openModal(index)} style={{ cursor: "pointer" }}>
-                <td>{index}</td>
-                <td>{i.ID}</td>
-                <td>{i.Name}</td>
-                <td>{i.Provider}</td>
-                <td><Button variant="danger" onClick={(e) => remove(e,i.ID,i.Name)}>Delete</Button></td>
-              </tr>
-            ))}
-          </tbody>
-        </Table>
-        <Modal show={state.showModal === UpdateIntegration} onHide={closeModal} className="transparent-modal">
-          <IntegrationModal integration={state.modalIntegration} onSave={onSave} onClose={closeModal} headerText={`Change Integration: ${state.modalIntegration?.Name}`} />
-        </Modal>
-        <Modal show={state.showModal === NewIntegration} onHide={closeModal} className="transparent-modal">
-          <NewIntegrationModal onSave={onSave} onClose={closeModal} />
-        </Modal>
-      </Card>
-    </Container>
+    <div className="page">
+      <div className="page-inner">
+        <header className="page-head row-between">
+          <div>
+            <span className="eyebrow">Device</span>
+            <h1>Integrations</h1>
+            <p className="lede">
+              Send documents to external storage and services automatically.
+            </p>
+          </div>
+          <button className="btn btn-primary" onClick={() => setCreating(true)}>
+            <Plus /> New integration
+          </button>
+        </header>
+
+        {loading && <Spinner />}
+
+        {error && (
+          <Alert kind="error" title="An error occurred">
+            {`Error ${error.status}: ${error.statusText}`}
+          </Alert>
+        )}
+
+        {!loading && !error && integrationList && integrationList.length === 0 && (
+          <div className="card">
+            <EmptyState icon={Blocks} title="No integrations yet">
+              Integrations automatically export your documents to WebDAV, Dropbox,
+              a local folder and more.
+            </EmptyState>
+          </div>
+        )}
+
+        {!loading && !error && integrationList && integrationList.length > 0 && (
+          <div className="card table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Provider</th>
+                  <th className="mono">ID</th>
+                  <th style={{ width: 60 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {integrationList.map((i: Integration) => (
+                  <tr key={i.ID} className="clickable" onClick={() => setEditing(i)}>
+                    <td style={{ fontWeight: 500 }}>{i.Name}</td>
+                    <td>
+                      <span className="badge">{providerLabels[i.Provider] || i.Provider}</span>
+                    </td>
+                    <td className="mono faint" style={{ fontSize: "var(--text-xs)" }}>
+                      {i.ID}
+                    </td>
+                    <td>
+                      <button
+                        className="icon-btn sm"
+                        title={`Delete ${i.Name}`}
+                        onClick={(e) => remove(e, i.ID, i.Name)}
+                      >
+                        <Trash2 />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Modal open={creating} onClose={() => setCreating(false)} title="New integration" wide footer={null}>
+        <NewIntegrationModal onSave={onSave} onClose={() => setCreating(false)} />
+      </Modal>
+
+      <Modal
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        title={`Edit ${editing?.Name ?? "integration"}`}
+        wide
+        footer={null}
+      >
+        <IntegrationModal integration={editing} onSave={onSave} onClose={() => setEditing(null)} />
+      </Modal>
+    </div>
   );
 };
 

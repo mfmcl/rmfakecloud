@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Container, Alert, Spinner, Button } from "react-bootstrap";
-import { BsGearFill, BsFullscreenExit, BsArrowCounterclockwise, BsArrowClockwise } from "react-icons/bs";
+import { Settings, Minimize2, RotateCcw, RotateCw, MonitorPlay } from "lucide-react";
 import pako from "pako";
 import constants from "../../common/constants";
 
@@ -479,30 +478,35 @@ export default function ScreenShare() {
 
 
   return (
-    <Container className="mt-4">
+    <div className="page">
+      <div className="page-inner stack">
       {status === STATUS.ERROR && (
-        <Alert variant="info">
-          {errorMsg}
-          {disconnectedRef.current && (
-            <Button variant="outline-primary" size="sm" className="ms-3" onClick={reconnect}>
-              Reconnect
-            </Button>
-          )}
-        </Alert>
+        <div className="alert alert-info">
+          <div>
+            {errorMsg}
+            {disconnectedRef.current && (
+              <button className="btn btn-outline btn-sm" style={{ marginLeft: 12 }} onClick={reconnect}>
+                Reconnect
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
-      {status === STATUS.WAITING && (
-        <Alert variant="info">
-          <Spinner animation="border" size="sm" className="me-2" />
-          Waiting for reMarkable to start screen sharing...
-        </Alert>
-      )}
-
-      {status === STATUS.CONNECTING && (
-        <Alert variant="info">
-          <Spinner animation="border" size="sm" className="me-2" />
-          Connecting to reMarkable...
-        </Alert>
+      {(status === STATUS.WAITING || status === STATUS.CONNECTING) && (
+        <div className="screenshare-idle">
+          <MonitorPlay size={44} strokeWidth={1.2} />
+          <h1 className="page-title">Screen Share</h1>
+          <p>
+            {status === STATUS.WAITING
+              ? "Waiting for your reMarkable to start screen sharing…"
+              : "Connecting to your reMarkable…"}
+          </p>
+          <span className="spinner" />
+          <p className="hint">
+            On the tablet: swipe down from the top, then tap the screen share icon.
+          </p>
+        </div>
       )}
 
       <div
@@ -566,7 +570,7 @@ export default function ScreenShare() {
         />
         {(() => {
           const light = poppedOut && isLightColor(resolveBackdrop(backdrop));
-          const btnVar = poppedOut ? (light ? "outline-dark" : "outline-light") : "outline-secondary";
+          const btnVar = poppedOut ? (light ? "btn-outline" : "btn-invert") : "btn-outline";
           if (poppedOut) {
             return (
               <div ref={controlsRef} style={{
@@ -584,21 +588,21 @@ export default function ScreenShare() {
                 <div style={{ display: "flex", flexDirection: controlsPosition === "right" ? "column" : "row", gap: 4 }}>
                   {controlsPosition === "right" ? (
                     <>
-                      <Button variant={btnVar} size="sm" onClick={() => setPoppedOut(false)} title="Exit fullscreen">
-                        <BsFullscreenExit />
-                      </Button>
-                      <Button variant={btnVar} size="sm" onClick={() => { setShowControls((s) => { if (!s) setPinnedPosition(controlsPosition); return !s; }); }} title="Options">
-                        <BsGearFill />
-                      </Button>
+                      <button className={"btn btn-sm " + btnVar} onClick={() => setPoppedOut(false)} title="Exit fullscreen">
+                        <Minimize2 size={15} />
+                      </button>
+                      <button className={"btn btn-sm " + btnVar} onClick={() => { setShowControls((s) => { if (!s) setPinnedPosition(controlsPosition); return !s; }); }} title="Options">
+                        <Settings size={15} />
+                      </button>
                     </>
                   ) : (
                     <>
-                      <Button variant={btnVar} size="sm" onClick={() => { setShowControls((s) => { if (!s) setPinnedPosition(controlsPosition); return !s; }); }} title="Options">
-                        <BsGearFill />
-                      </Button>
-                      <Button variant={btnVar} size="sm" onClick={() => setPoppedOut(false)} title="Exit fullscreen">
-                        <BsFullscreenExit />
-                      </Button>
+                      <button className={"btn btn-sm " + btnVar} onClick={() => { setShowControls((s) => { if (!s) setPinnedPosition(controlsPosition); return !s; }); }} title="Options">
+                        <Settings size={15} />
+                      </button>
+                      <button className={"btn btn-sm " + btnVar} onClick={() => setPoppedOut(false)} title="Exit fullscreen">
+                        <Minimize2 size={15} />
+                      </button>
                     </>
                   )}
                 </div>
@@ -614,16 +618,16 @@ export default function ScreenShare() {
                     alignItems: "stretch", minWidth: 160,
                   }}>
                     <div style={{ display: "flex", gap: 4 }}>
-                      <Button variant={btnVar} size="sm" onClick={() => setManualRotation((r) => r - 90)} title="Rotate counter-clockwise" style={{ flex: 1, whiteSpace: "nowrap" }}>
-                        <BsArrowCounterclockwise /> Rotate L
-                      </Button>
-                      <Button variant={btnVar} size="sm" onClick={() => setManualRotation((r) => r + 90)} title="Rotate clockwise" style={{ flex: 1, whiteSpace: "nowrap" }}>
-                        <BsArrowClockwise /> Rotate R
-                      </Button>
+                      <button className={"btn btn-sm " + btnVar} onClick={() => setManualRotation((r) => r - 90)} title="Rotate counter-clockwise" style={{ flex: 1, whiteSpace: "nowrap" }}>
+                        <RotateCcw size={15} /> Rotate L
+                      </button>
+                      <button className={"btn btn-sm " + btnVar} onClick={() => setManualRotation((r) => r + 90)} title="Rotate clockwise" style={{ flex: 1, whiteSpace: "nowrap" }}>
+                        <RotateCw size={15} /> Rotate R
+                      </button>
                     </div>
-                    <Button variant={btnVar} size="sm" onClick={disconnect} title="End screenshare session">
+                    <button className={"btn btn-sm " + btnVar} onClick={disconnect} title="End screenshare session">
                       Disconnect
-                    </Button>
+                    </button>
                     <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center", marginTop: 2 }}>
                       {Object.entries(BACKDROP_PRESETS).map(([name, color]) => (
                         <button
@@ -632,7 +636,7 @@ export default function ScreenShare() {
                           onClick={() => { setBackdrop(name); setBackdropPref(name); }}
                           style={{
                             width: 22, height: 22, borderRadius: 3,
-                            border: backdrop === name ? "2px solid #0d6efd" : "1px solid #666",
+                            border: backdrop === name ? "2px solid #999" : "1px solid #666",
                             background: color, cursor: "pointer", padding: 0,
                           }}
                         />
@@ -640,7 +644,7 @@ export default function ScreenShare() {
                       <label title="Custom color" style={{ position: "relative", width: 22, height: 22, cursor: "pointer" }}>
                         <span style={{
                           display: "block", width: 22, height: 22, borderRadius: 3,
-                          border: !BACKDROP_PRESETS[backdrop] ? "2px solid #0d6efd" : "1px solid #666",
+                          border: !BACKDROP_PRESETS[backdrop] ? "2px solid #999" : "1px solid #666",
                           background: "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
                         }} />
                         <input
@@ -664,22 +668,23 @@ export default function ScreenShare() {
           }
           return (
             <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-              <Button variant={btnVar} size="sm" onClick={() => setManualRotation((r) => r - 90)} title="Rotate left">
-                <BsArrowCounterclockwise />
-              </Button>
-              <Button variant={btnVar} size="sm" onClick={() => setManualRotation((r) => r + 90)} title="Rotate right">
-                <BsArrowClockwise />
-              </Button>
-              <Button variant={btnVar} size="sm" onClick={() => setPoppedOut(true)}>
+              <button className={"btn btn-sm " + btnVar} onClick={() => setManualRotation((r) => r - 90)} title="Rotate left">
+                <RotateCcw size={15} />
+              </button>
+              <button className={"btn btn-sm " + btnVar} onClick={() => setManualRotation((r) => r + 90)} title="Rotate right">
+                <RotateCw size={15} />
+              </button>
+              <button className={"btn btn-sm " + btnVar} onClick={() => setPoppedOut(true)}>
                 Fullscreen
-              </Button>
-              <Button variant={btnVar} size="sm" onClick={disconnect}>
+              </button>
+              <button className={"btn btn-sm " + btnVar} onClick={disconnect}>
                 Disconnect
-              </Button>
+              </button>
             </div>
           );
         })()}
       </div>
-    </Container>
+    </div>
+    </div>
   );
 }

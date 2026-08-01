@@ -25,7 +25,7 @@ buildGoModule rec {
     pnpmLock = "${src}/ui/pnpm-lock.yaml";
     pnpm = pnpm_11;
     fetcherVersion = 4;
-    hash = "sha256-UQT6uYusDw7Hd+1URrSQkyorajih6oF0LSMpPZy9K1w=";
+    hash = "";
   };
 
   preBuild = lib.optionals enableWebui ''

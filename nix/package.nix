@@ -21,8 +21,7 @@ buildGoModule rec {
   env.pnpmRoot = "ui";
   env.pnpmDeps = fetchPnpmDeps {
     inherit pname version src;
-    sourceRoot = "${src}/ui";
-    pnpmLock = "${src}/ui/pnpm-lock.yaml";
+    sourceRoot = "ui";
     pnpm = pnpm_11;
     fetcherVersion = 4;
     hash = "";

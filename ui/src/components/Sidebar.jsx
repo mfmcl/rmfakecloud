@@ -1,6 +1,7 @@
 import { NavLink, useHistory } from "react-router-dom";
 import {
   Blocks,
+  BookOpen,
   FolderOpen,
   House,
   LogOut,
@@ -75,6 +76,16 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
           </NavSection>
         )}
       </nav>
+
+      <a
+        href="https://ddvk.github.io/rmfakecloud/"
+        className="sidebar-link"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={onNavigate}
+      >
+        <BookOpen /> Documentation
+      </a>
 
       <div className="sidebar-foot">
         <button

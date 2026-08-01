@@ -10,12 +10,10 @@ import {
   ShieldCheck,
   Sun,
   TabletSmartphone,
-  UserRound,
 } from "lucide-react";
 
 import { logout } from "../common/actions";
 import { useAuthState } from "../common/useAuthContext";
-import Dropdown from "./ui/Dropdown";
 
 function NavSection({ label, children }) {
   return (
@@ -84,33 +82,28 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
       </nav>
 
       <div className="sidebar-foot">
-        <Dropdown
-          up
-          align="start"
-          toggle={({ toggle }) => (
-            <button className="user-chip" onClick={toggle} title="Account">
-              <span className="user-avatar">{initial}</span>
-              <span className="name">{user?.UserID}</span>
-            </button>
-          )}
+        <button
+          className="user-chip"
+          onClick={() => {
+            onNavigate?.();
+            history.push("/profile");
+          }}
+          title="Profile"
         >
-          <button
-            className="dropdown-item"
-            onClick={() => {
-              onNavigate?.();
-              history.push("/profile");
-            }}
-          >
-            <UserRound /> Profile
-          </button>
-          <div className="dropdown-sep" />
-          <button className="dropdown-item" onClick={() => logout(dispatch)}>
-            <LogOut /> Log out
-          </button>
-        </Dropdown>
+          <span className="user-avatar">{initial}</span>
+          <span className="name">{user?.UserID}</span>
+        </button>
 
         <button
-          className="icon-btn"
+          className="sidebar-logout"
+          onClick={() => logout(dispatch)}
+          title="Log out"
+        >
+          <LogOut />
+        </button>
+
+        <button
+          className="sidebar-logout"
           onClick={onToggleTheme}
           title={theme === "ink" ? "Switch to paper theme" : "Switch to ink theme"}
         >

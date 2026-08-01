@@ -1,0 +1,28 @@
+/* ------------------------------------------------------------------
+   Custom fonts — reMarkable brand typefaces
+   WOFF2 variable fonts from remarkable.com
+   ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: "RM Serif";
+  src: url("/fonts/rm-serif.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RM Serif";
+  src: url("/fonts/rm-serif-italic.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "RM Sans";
+  src: url("/fonts/rm-sans.woff2") format("woff2");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}

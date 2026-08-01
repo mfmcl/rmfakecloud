@@ -37,15 +37,15 @@ body::before {
     linear-gradient(175deg, var(--paper-grad-1) 0%, var(--paper-grad-2) 60%, var(--paper-2) 100%);
 }
 
-/* Film grain — an ultra-subtle noise veil over everything */
+/* Film grain — a barely-there noise veil over everything */
 body::after {
   content: "";
   position: fixed;
   inset: -50%;
   z-index: 4000;
   pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 240px 240px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
   opacity: var(--grain-opacity);
   mix-blend-mode: var(--grain-blend);
 }

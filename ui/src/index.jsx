@@ -17,6 +17,7 @@ import "@fontsource/fira-code/latin-400.css";
 import "@fontsource/fira-code/latin-500.css";
 
 // Styles
+import "./styles/fonts.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/ui.css";

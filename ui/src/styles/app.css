@@ -266,12 +266,17 @@
   display: flex;
   flex-direction: column;
 }
+/* Animate any page root on mount — catch-all for pages that don't use .page */
+.page-stage > * {
+  animation: page-in 220ms var(--ease);
+}
 
 .page {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   padding: var(--sp-7) var(--sp-6) var(--sp-8);
+  animation: page-in 220ms var(--ease);
 }
 .page-inner {
   width: 100%;

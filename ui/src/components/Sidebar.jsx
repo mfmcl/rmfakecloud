@@ -18,7 +18,6 @@ import { useAuthState } from "../common/useAuthContext";
 function NavSection({ label, children }) {
   return (
     <div className="sidebar-section">
-      <span className="eyebrow">{label}</span>
       {children}
     </div>
   );
@@ -41,12 +40,8 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
   return (
     <aside className={`sidebar ${open ? "open" : ""}`}>
       <div className="sidebar-brand">
-        <span className="brand-mark">
-          <NotebookPen />
-        </span>
         <div>
           <div className="brand-name">rmfakecloud</div>
-          <div className="brand-sub">paper sync</div>
         </div>
       </div>
 
@@ -90,16 +85,7 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
           }}
           title="Profile"
         >
-          <span className="user-avatar">{initial}</span>
           <span className="name">{user?.UserID}</span>
-        </button>
-
-        <button
-          className="sidebar-logout"
-          onClick={() => logout(dispatch)}
-          title="Log out"
-        >
-          <LogOut />
         </button>
 
         <button
@@ -108,6 +94,14 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
           title={theme === "ink" ? "Switch to paper theme" : "Switch to ink theme"}
         >
           {theme === "ink" ? <Sun /> : <Moon />}
+        </button>
+
+        <button
+          className="sidebar-logout"
+          onClick={() => logout(dispatch)}
+          title="Log out"
+        >
+          <LogOut />
         </button>
       </div>
     </aside>

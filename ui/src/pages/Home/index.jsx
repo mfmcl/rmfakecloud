@@ -125,7 +125,6 @@ export default function Home() {
               </div>
               <div className="up-sub">
                 Drop PDFs, EPUBs or .rmdoc files here, or click to browse.
-                Files land in My Files.
               </div>
             </div>
           </div>

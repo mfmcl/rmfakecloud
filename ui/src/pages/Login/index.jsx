@@ -27,16 +27,12 @@ const Login = () => {
   return (
     <div className="auth-wrap">
       <div className="auth-brand">
-        <span className="brand-mark">
-          <NotebookPen />
-        </span>
         <div>
           <h1>rmfakecloud</h1>
-          <div className="sub">Your own paper cloud</div>
         </div>
       </div>
 
-      <div className="card card-pad auth-card">
+      <div className="">
         <form onSubmit={handleLogin}>
           {errorMessage && (
             <Alert kind="error" className="mb-3" title="Sign in failed">
@@ -45,7 +41,6 @@ const Login = () => {
           )}
 
           <div className="field">
-            <label htmlFor="username">Username</label>
             <input
               className="input"
               id="username"
@@ -59,7 +54,6 @@ const Login = () => {
           </div>
 
           <div className="field">
-            <label htmlFor="password">Password</label>
             <input
               className="input"
               type="password"

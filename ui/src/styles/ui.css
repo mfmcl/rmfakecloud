@@ -264,6 +264,7 @@ textarea.input {
   position: relative;
   display: flex;
   align-items: center;
+  width: 100%;
 }
 .search-box > svg {
   position: absolute;
@@ -582,6 +583,7 @@ table.table {
   font-weight: 500;
   color: var(--ink-2);
   white-space: nowrap;
+  margin-inline-start: 8px;
 }
 .badge.solid {
   background: var(--accent);

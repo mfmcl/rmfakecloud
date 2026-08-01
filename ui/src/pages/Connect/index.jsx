@@ -33,7 +33,6 @@ export default function Connect() {
     <div className="connect-wrap">
       <div className="connect-card">
         <div>
-          <span className="eyebrow">Pair a device</span>
           <h1 style={{ margin: "var(--sp-2) 0" }}>Connect your reMarkable</h1>
           <p className="muted serif" style={{ fontSize: "var(--text-lg)", margin: 0 }}>
             Enter this one-time code on your tablet to link it with your cloud.

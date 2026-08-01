@@ -10,7 +10,6 @@ const Profile = () => {
     <div className="page page-narrow">
       <div className="page-inner">
         <header className="page-head">
-          <span className="eyebrow">Account</span>
           <h1>Profile</h1>
           <p className="lede">
             Signed in as <strong>{user.UserID}</strong>

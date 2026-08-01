@@ -57,7 +57,6 @@ const Integrations = () => {
       <div className="page-inner">
         <header className="page-head row-between">
           <div>
-            <span className="eyebrow">Device</span>
             <h1>Integrations</h1>
             <p className="lede">
               Send documents to external storage and services automatically.

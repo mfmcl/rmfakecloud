@@ -9,6 +9,9 @@
   nixosTests ? null,
   src,
 }:
+let
+  uiSrc = src + "/ui";
+in
 buildGoModule rec {
   pname = "rmfakecloud";
   version = "0.0.31-custom";
@@ -20,8 +23,8 @@ buildGoModule rec {
   # if using webUI build it
   env.pnpmRoot = "ui";
   env.pnpmDeps = fetchPnpmDeps {
-    inherit pname version src;
-    sourceRoot = "ui";
+    inherit pname version;
+    src = uiSrc;
     pnpm = pnpm_11;
     fetcherVersion = 4;
     hash = "";

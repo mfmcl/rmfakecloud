@@ -260,6 +260,14 @@
   flex-direction: column;
 }
 
+/* Wrapper that receives location key to trigger page transitions */
+.page-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .page {
   flex: 1;
   overflow-y: auto;

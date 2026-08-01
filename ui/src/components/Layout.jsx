@@ -51,7 +51,9 @@ export default function Layout({ children }) {
 
         <div className="content">
           <PasscodeResets />
-          {children}
+          <div key={location.pathname} className="page-stage">
+            {children}
+          </div>
         </div>
       </div>
     </div>

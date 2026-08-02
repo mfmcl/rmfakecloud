@@ -102,8 +102,8 @@
   --grain-blend: multiply;
 
   --bubble:
-      inset 0 0.5px 4px 0px rgba(255, 255, 255, 0.5),
-      inset 0 -1px 2px 0.5px rgba(0, 0, 0, 0.05);
+      inset 0 0.5px 4px 0px rgba(255, 255, 255, 0.05),
+      inset 0 -1px 2px 0.5px rgba(0, 0, 0, 0.2);
 
   --highlight: rgba(26, 26, 24, 0.05);
   --selection: rgba(26, 26, 24, 0.12);

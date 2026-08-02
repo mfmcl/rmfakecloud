@@ -42,7 +42,7 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
     <aside className={`sidebar ${open ? "open" : ""}`}>
       <div className="sidebar-brand">
         <div>
-          <div className="brand-name">rmfakecloud</div>
+          <div className="brand-name">reMarkable</div>
         </div>
       </div>
 

@@ -19,8 +19,7 @@ node_modules/
 assets_vfsdata.go
 .vscode/
 assets_vfsdata.go
-# Dependency directories (remove the comment below to include it)
-# vendor/
+vendor/
 
 # mkdoc build
 site/

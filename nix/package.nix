@@ -18,7 +18,7 @@ buildGoModule rec {
 
   inherit src;
 
-  vendorHash = "sha256-A+y63w+sEleXFh4ZHgFo1IhsQ2KhqqKW4vRPi393atI=";
+  vendorHash = "sha256-928JWLkCXwM0zbs0O/OZP9T5Yx4NpvkLz5cfnyWY6yE=";
 
   # if using webUI build it
   env.pnpmRoot = "ui";

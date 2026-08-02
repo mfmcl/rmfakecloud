@@ -159,6 +159,8 @@ func NewApp(cfg *config.Config) App {
 		router.Use(requestLoggerMiddleware())
 	}
 
+	router.Use(rateLimitMiddleware())
+
 	app := App{
 		router:        router,
 		cfg:           cfg,

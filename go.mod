@@ -22,6 +22,7 @@ require (
 	github.com/studio-b12/gowebdav v0.9.0
 	github.com/unidoc/unipdf/v3 v3.56.0
 	golang.org/x/crypto v0.36.0
+	golang.org/x/time v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

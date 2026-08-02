@@ -77,6 +77,9 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
         )}
       </nav>
 
+
+      <NavSection label="Links">
+
       <a
         href="https://ddvk.github.io/rmfakecloud/"
         className="sidebar-link"
@@ -84,8 +87,9 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
         rel="noopener noreferrer"
         onClick={onNavigate}
       >
-        <BookOpen /> Documentation
+        <BookOpen /> Docs
       </a>
+      </NavSection>
 
       <div className="sidebar-foot">
         <button

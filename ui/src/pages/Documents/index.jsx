@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-toastify";
 import {
   ChevronRight,
   Download,
+  Folder,
+  FolderInput,
   FolderPlus,
   House,
   LayoutGrid,
@@ -22,7 +24,7 @@ import Modal from "../../components/ui/Modal";
 import DocsSkeleton from "../../components/ui/DocsSkeleton";
 import { FolderSearch } from "lucide-react";
 
-import { collectFiles, composeTree, findById, pathLabel } from "./tree-utils";
+import { collectFiles, composeTree, descendantIds, findById, pathLabel } from "./tree-utils";
 import FolderTree from "./FolderTree";
 import Listing from "./Listing";
 import FilePreview from "./FilePreview";
@@ -49,6 +51,17 @@ export default function Documents() {
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [showDelete, setShowDelete] = useState(false);
+
+  // Move-to-folder state
+  const [showMove, setShowMove] = useState(false);
+  const [moveTarget, setMoveTarget] = useState("root");
+  const [moving, setMoving] = useState(false);
+
+  // Drag & drop state. A ref mirrors the dragged ids so event handlers can
+  // read them synchronously (dataTransfer types are read-only during drag).
+  const [dragIds, setDragIds] = useState(() => new Set());
+  const dragIdsRef = useRef(new Set());
+  const [dropTarget, setDropTarget] = useState(null);
 
   const selectedId = itemId || "root";
 
@@ -88,6 +101,8 @@ export default function Documents() {
   useEffect(() => {
     setChecked(new Set());
     setTerm("");
+    clearDrag();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
   // ----- navigation -----------------------------------------------------
@@ -199,6 +214,158 @@ export default function Documents() {
     reload();
   };
 
+  // ----- move --------------------------------------------------------------
+  const clearDrag = useCallback(() => {
+    dragIdsRef.current = new Set();
+    setDragIds(new Set());
+    setDropTarget(null);
+  }, []);
+
+  const beginDrag = useCallback(
+    (entry, e) => {
+      if (inTrash || searching) return;
+      // Dragging a checked item drags the whole selection, like a file manager.
+      const ids =
+        checked.size > 0 && checked.has(entry.id)
+          ? [...checked]
+          : [entry.id];
+      dragIdsRef.current = new Set(ids);
+      setDragIds(new Set(ids));
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("application/x-rmf-move", JSON.stringify({ ids }));
+    },
+    [checked, inTrash, searching]
+  );
+
+  // Whether a folder may receive the current drag: not the dragged item
+  // itself, not one of its descendants, and not trash.
+  const canDropOn = useCallback(
+    (targetId) => {
+      const ids = dragIdsRef.current;
+      if (!ids || ids.size === 0) return false;
+      if (targetId === "trash") return false;
+      if (targetId !== "root" && !findById(tree.root, targetId)) return false;
+      for (const id of ids) {
+        if (id === targetId) return false;
+        const node = findById(tree.root, id)?.node || findById(tree.trash, id)?.node;
+        if (!node) continue;
+        if (node.isFolder && descendantIds(node).has(targetId)) return false;
+      }
+      return true;
+    },
+    [tree]
+  );
+
+  const onFolderTarget = useCallback(
+    (id) =>
+      setDropTarget((prev) => {
+        const next = canDropOn(id) ? { id } : null;
+        return prev?.id === next?.id ? prev : next;
+      }),
+    [canDropOn]
+  );
+
+  const doMove = useCallback(
+    async (targetId) => {
+      const ids = [...dragIdsRef.current];
+      clearDrag();
+      if (!ids.length) return;
+      const parent = targetId === "root" ? "" : targetId;
+      let moved = 0;
+      let skipped = 0;
+      let failed = 0;
+      for (const id of ids) {
+        const loc = findById(tree.root, id) || findById(tree.trash, id);
+        if (!loc) {
+          failed += 1;
+          continue;
+        }
+        const currentParent = loc.trail[loc.trail.length - 1]?.id;
+        if (currentParent === targetId) {
+          skipped += 1;
+          continue;
+        }
+        try {
+          await apiservice.updateDocument(id, loc.node.name, parent);
+          moved += 1;
+        } catch (err) {
+          failed += 1;
+        }
+      }
+      if (failed) toast.error(`Couldn't move ${failed} item(s)`);
+      else if (moved)
+        toast.success(moved === 1 ? "Moved 1 item" : `Moved ${moved} items`);
+      else if (skipped) toast.info("Already in that folder");
+      setChecked(new Set());
+      reload();
+    },
+    [tree, reload, clearDrag]
+  );
+
+  const onFolderDrop = useCallback(
+    (id, e) => {
+      e?.preventDefault?.();
+      if (canDropOn(id)) doMove(id);
+      else clearDrag();
+    },
+    [canDropOn, doMove, clearDrag]
+  );
+
+  const openMove = () => {
+    setMoveTarget("root");
+    setShowMove(true);
+  };
+
+  const closeMove = () => {
+    if (moving) return;
+    setShowMove(false);
+  };
+
+  const confirmMove = async () => {
+    setShowMove(false);
+    setMoving(true);
+    dragIdsRef.current = new Set(checked);
+    setDragIds(new Set(checked));
+    try {
+      await doMove(moveTarget);
+    } finally {
+      setMoving(false);
+    }
+  };
+
+  // Every folder that can receive a move, as an indented list.
+  const moveOptions = useMemo(() => {
+    if (!tree) return [];
+    const out = [{ id: "root", name: "My Files", depth: 0 }];
+    const walk = (folders, depth) => {
+      for (const f of folders) {
+        out.push({ id: f.id, name: f.name, depth });
+        walk((f.children || []).filter((c) => c.isFolder), depth + 1);
+      }
+    };
+    walk((tree.root.children || []).filter((c) => c.isFolder), 1);
+    return out;
+  }, [tree]);
+
+  // A checked folder (and everything inside it) can't be moved into itself.
+  // Look in both the library and the trash (items can be restored via Move).
+  const excludedTargets = useMemo(() => {
+    const ex = new Set();
+    for (const id of checked) {
+      const node =
+        findById(tree.root, id)?.node || findById(tree.trash, id)?.node;
+      if (!node || !node.isFolder) continue;
+      ex.add(id);
+      descendantIds(node).forEach((d) => ex.add(d));
+    }
+    return ex;
+  }, [checked, tree]);
+
+  const moveOptionsShown = useMemo(
+    () => moveOptions.filter((o) => !excludedTargets.has(o.id)),
+    [moveOptions, excludedTargets]
+  );
+
   const onDownload = (exportType) => {
     const ext = exportType === "rmdoc" ? ".rmdoc" : ".pdf";
     apiservice
@@ -284,6 +451,9 @@ export default function Documents() {
             trash={tree.trash}
             selectedId={selectedId}
             onSelect={navigateTo}
+            dropId={dropTarget?.id ?? null}
+            onFolderTarget={onFolderTarget}
+            onFolderDrop={onFolderDrop}
           />
         </aside>
 
@@ -326,6 +496,12 @@ export default function Documents() {
                   Download .rmdoc
                 </button>
               </Dropdown>
+            )}
+
+            {checked.size > 0 && (
+              <button className="btn btn-sm" onClick={openMove} title="Move selected items to a folder">
+                <FolderInput /> Move ({checked.size})
+              </button>
             )}
 
             {checked.size > 0 && (
@@ -380,6 +556,12 @@ export default function Documents() {
                 onToggleCheck={toggleCheck}
                 onToggleAll={toggleAll}
                 onOpen={navigateTo}
+                draggable={!inTrash && !searching}
+                dropId={dropTarget?.id ?? null}
+                onEntryDragStart={beginDrag}
+                onDragEnd={clearDrag}
+                onFolderTarget={onFolderTarget}
+                onFolderDrop={onFolderDrop}
                 subtitle={
                   searching ? (entry) => searchPaths?.[entry.id] : undefined
                 }
@@ -427,6 +609,43 @@ export default function Documents() {
             placeholder="e.g. Notebooks"
           />
         </div>
+      </Modal>
+
+      <Modal
+        open={showMove}
+        onClose={closeMove}
+        title={`Move ${checked.size} item${checked.size === 1 ? "" : "s"} to…`}
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={closeMove}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={confirmMove} disabled={moving}>
+              {moving ? <span className="spinner sm" /> : "Move here"}
+            </button>
+          </>
+        }
+      >
+        {moveOptionsShown.length === 0 ? (
+          <p className="muted" style={{ margin: 0 }}>
+            No destination folders available.
+          </p>
+        ) : (
+          <div className="move-picker">
+            {moveOptionsShown.map((o) => (
+              <button
+                key={o.id}
+                className={`move-option ${moveTarget === o.id ? "active" : ""}`}
+                style={{ paddingLeft: 12 + o.depth * 18 }}
+                onClick={() => setMoveTarget(o.id)}
+              >
+                <Folder />
+                {o.name}
+                {moveTarget === o.id && <span className="filler" />}
+              </button>
+            ))}
+          </div>
+        )}
       </Modal>
 
       <Modal

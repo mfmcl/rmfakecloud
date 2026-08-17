@@ -39,6 +39,16 @@ export function findById(node, id, trail = []) {
   return null;
 }
 
+// IDs of all descendants of the folder `node` (not including `node` itself).
+// Used to prevent moving a folder into itself or one of its own children.
+export function descendantIds(node, out = new Set()) {
+  for (const child of node.children || []) {
+    out.add(child.id);
+    if (child.isFolder) descendantIds(child, out);
+  }
+  return out;
+}
+
 // All descendant files of `node`, each annotated with the
 // breadcrumb-ish path of folder names leading to it.
 export function collectFiles(node, trail = []) {

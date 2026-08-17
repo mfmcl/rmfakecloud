@@ -152,6 +152,15 @@ class ApiServices {
       return r.json();
     });
   }
+
+  // Move a document/folder to another parent (parentId "" = My Files root)
+  updateDocument(documentId, name, parentId) {
+    return fetch(`${constants.ROOT_URL}/documents`, {
+      method: "PUT",
+      headers: this.header(),
+      body: JSON.stringify({ documentId, name, parentId }),
+    }).then((r) => handleError(r));
+  }
   updateuser(usr) {
     return fetch(`${constants.ROOT_URL}/users`, {
       method: "PUT",

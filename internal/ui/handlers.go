@@ -317,6 +317,7 @@ func (app *ReactAppWrapper) updateDocument(c *gin.Context) {
 		badReq(c, err.Error())
 		return
 	}
+	backend.Sync(uid)
 
 	c.Status(http.StatusOK)
 }

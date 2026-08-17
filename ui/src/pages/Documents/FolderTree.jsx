@@ -2,24 +2,55 @@ import { useState } from "react";
 import { ChevronRight, House, Trash2 } from "lucide-react";
 import { iconFor } from "./FileTypeIcon";
 
-function TreeNode({ node, depth, selectedId, onSelect, defaultOpen }) {
+const MOVE_MIME = "application/x-rmf-move";
+
+function hasMovePayload(e) {
+  const types = e.dataTransfer?.types || [];
+  return types.includes(MOVE_MIME);
+}
+
+// Drop behaviour for a tree item. Only reacts to our internal move drags.
+function makeTreeDropHandlers(id, onFolderTarget, onFolderDrop) {
+  return {
+    onDragOver: (e) => {
+      if (!hasMovePayload(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      onFolderTarget?.(id);
+    },
+    onDragLeave: (e) => {
+      if (!e.currentTarget.contains(e.relatedTarget)) {
+        onFolderTarget?.(null);
+      }
+    },
+    onDrop: (e) => {
+      if (!hasMovePayload(e)) return;
+      e.preventDefault();
+      onFolderDrop?.(id, e);
+    },
+  };
+}
+
+function TreeNode({ node, depth, selectedId, onSelect, defaultOpen, dropId, onFolderTarget, onFolderDrop }) {
   const [open, setOpen] = useState(defaultOpen);
   const folders = (node.children || []).filter((c) => c.isFolder);
   const hasKids = folders.length > 0;
   const isSelected = node.id === selectedId;
   const isAncestorOfSelection = !isSelected && isAncestor(node, selectedId);
   const expanded = open || isAncestorOfSelection || isSelected;
+  const isDrop = dropId === node.id;
 
   const Icon = iconFor(node);
 
   return (
     <div>
       <button
-        className={`tree-item ${isSelected ? "active" : ""}`}
+        className={`tree-item ${isSelected ? "active" : ""} ${isDrop ? "drop-target" : ""}`}
         onClick={() => {
           onSelect(node);
           if (hasKids) setOpen((o) => (isSelected ? !o : true));
         }}
+        {...makeTreeDropHandlers(node.id, onFolderTarget, onFolderDrop)}
       >
         <ChevronRight
           className={`tree-chev ${expanded ? "open" : ""} ${hasKids ? "" : "leaf"}`}
@@ -37,6 +68,9 @@ function TreeNode({ node, depth, selectedId, onSelect, defaultOpen }) {
               selectedId={selectedId}
               onSelect={onSelect}
               defaultOpen={false}
+              dropId={dropId}
+              onFolderTarget={onFolderTarget}
+              onFolderDrop={onFolderDrop}
             />
           ))}
         </div>
@@ -53,14 +87,23 @@ function isAncestor(node, id) {
   return false;
 }
 
-export default function FolderTree({ root, trash, selectedId, onSelect }) {
+export default function FolderTree({
+  root,
+  trash,
+  selectedId,
+  onSelect,
+  dropId = null,
+  onFolderTarget,
+  onFolderDrop,
+}) {
   if (!root) return null;
 
   return (
     <div className="docs-tree">
       <button
-        className={`tree-item ${selectedId === "root" ? "active" : ""}`}
+        className={`tree-item ${selectedId === "root" ? "active" : ""} ${dropId === "root" ? "drop-target" : ""}`}
         onClick={() => onSelect(root)}
+        {...makeTreeDropHandlers("root", onFolderTarget, onFolderDrop)}
       >
         <ChevronRight className="tree-chev leaf" />
         <House className="tree-ico" />
@@ -77,6 +120,9 @@ export default function FolderTree({ root, trash, selectedId, onSelect }) {
               selectedId={selectedId}
               onSelect={onSelect}
               defaultOpen={false}
+              dropId={dropId}
+              onFolderTarget={onFolderTarget}
+              onFolderDrop={onFolderDrop}
             />
           ))}
       </div>

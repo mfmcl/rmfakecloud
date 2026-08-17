@@ -53,6 +53,61 @@ function foldersFirst(entries) {
   return [...folders, ...files];
 }
 
+const MOVE_MIME = "application/x-rmf-move";
+
+function hasMovePayload(e) {
+  const types = e.dataTransfer?.types || [];
+  return types.includes(MOVE_MIME);
+}
+
+// Drag behaviour for a row/card: draggable when enabled, dragging a checked
+// item carries the whole selection (handled by onEntryDragStart in the parent).
+function makeDragHandlers(draggable, onEntryDragStart, onDragEnd) {
+  return (entry) => ({
+    draggable: !!draggable,
+    onDragStart: draggable
+      ? (e) => {
+          e.stopPropagation();
+          onEntryDragStart?.(entry, e);
+        }
+      : undefined,
+    onDragEnd: draggable
+      ? (e) => {
+          e.stopPropagation();
+          onDragEnd?.(e);
+        }
+      : undefined,
+  });
+}
+
+// Drop behaviour for a folder row/card. Only reacts to our internal move
+// drags — file drags (uploads) are left to the surrounding dropzone.
+function makeFolderDropHandlers(onFolderTarget, onFolderDrop) {
+  return (entry) =>
+    entry.isFolder
+      ? {
+          onDragOver: (e) => {
+            if (!hasMovePayload(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "move";
+            onFolderTarget?.(entry.id);
+          },
+          onDragLeave: (e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              onFolderTarget?.(null);
+            }
+          },
+          onDrop: (e) => {
+            if (!hasMovePayload(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            onFolderDrop?.(entry.id, e);
+          },
+        }
+      : {};
+}
+
 export default function Listing({
   view,
   entries,
@@ -61,6 +116,12 @@ export default function Listing({
   onToggleAll,
   onOpen,
   subtitle,
+  draggable = false,
+  dropId = null,
+  onEntryDragStart,
+  onDragEnd,
+  onFolderTarget,
+  onFolderDrop,
 }) {
   const [sort, setSort] = useState({ field: "modified", dir: "desc" });
 
@@ -84,11 +145,13 @@ export default function Listing({
         {sorted.map((entry) => (
           <div
             key={entry.id}
-            className={`file-card ${checked.has(entry.id) ? "checked" : ""}`}
+            className={`file-card ${checked.has(entry.id) ? "checked" : ""} ${entry.isFolder && dropId === entry.id ? "drop-target" : ""}`}
             role="button"
             tabIndex={0}
             onClick={() => onOpen(entry)}
             onKeyDown={(e) => e.key === "Enter" && onOpen(entry)}
+            {...makeDragHandlers(draggable, onEntryDragStart, onDragEnd)(entry)}
+            {...makeFolderDropHandlers(onFolderTarget, onFolderDrop)(entry)}
           >
             <input
               type="checkbox"
@@ -133,11 +196,13 @@ export default function Listing({
       {sorted.map((entry) => (
         <div
           key={entry.id}
-          className={`file-row ${checked.has(entry.id) ? "checked" : ""}`}
+          className={`file-row ${checked.has(entry.id) ? "checked" : ""} ${entry.isFolder && dropId === entry.id ? "drop-target" : ""}`}
           role="button"
           tabIndex={0}
           onClick={() => onOpen(entry)}
           onKeyDown={(e) => e.key === "Enter" && onOpen(entry)}
+          {...makeDragHandlers(draggable, onEntryDragStart, onDragEnd)(entry)}
+          {...makeFolderDropHandlers(onFolderTarget, onFolderDrop)(entry)}
         >
           <input
             type="checkbox"

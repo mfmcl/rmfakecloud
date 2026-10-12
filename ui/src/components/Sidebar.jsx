@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { NavLink, useHistory } from "react-router-dom";
 import {
   Blocks,
   BookOpen,
+  Code2,
   FolderOpen,
   House,
   LogOut,
@@ -15,6 +17,7 @@ import {
 
 import { logout } from "../common/actions";
 import { useAuthState } from "../common/useAuthContext";
+import apiService from "../services/api.service";
 
 function NavSection({ label, children }) {
   return (
@@ -30,6 +33,17 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
     dispatch,
   } = useAuthState();
   const history = useHistory();
+  const [version, setVersion] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    apiService.getVersion().then((data) => {
+      if (active && data?.version) setVersion(data.version);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isAdmin = user && user.Roles && user.Roles[0] === "Admin";
   const initial = (user?.UserID || "?").charAt(0);
@@ -79,16 +93,29 @@ export default function Sidebar({ open, onNavigate, theme, onToggleTheme }) {
 
 
       <NavSection label="Links">
-
-      <a
-        href="https://ddvk.github.io/rmfakecloud/"
-        className="sidebar-link"
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onNavigate}
-      >
-        <BookOpen /> Docs
-      </a>
+        <a
+          href="https://ddvk.github.io/rmfakecloud/"
+          className="sidebar-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onNavigate}
+        >
+          <BookOpen /> Docs
+        </a>
+        <a
+          href="https://github.com/mfmcl/rmfakecloud"
+          className="sidebar-link"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onNavigate}
+        >
+          <Code2 /> GitHub
+        </a>
+        {version && (
+          <div className="sidebar-version" title="Server version">
+            rmfakecloud {version}
+          </div>
+        )}
       </NavSection>
 
       <div className="sidebar-foot">

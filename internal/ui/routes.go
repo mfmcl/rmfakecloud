@@ -38,6 +38,7 @@ func (app *ReactAppWrapper) RegisterRoutes(router *gin.Engine) {
 	})
 
 	r := router.Group("/ui/api")
+	r.GET("version", app.getVersion)
 	r.POST("register", app.register)
 	r.POST("login", app.login)
 	r.GET("logout", func(c *gin.Context) {

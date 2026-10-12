@@ -288,6 +288,15 @@ func (app *ReactAppWrapper) getDocument(c *gin.Context) {
 	c.DataFromReader(http.StatusOK, -1, "application/octet-stream", reader, nil)
 }
 
+// getVersion reports the running server version (unauthenticated).
+func (app *ReactAppWrapper) getVersion(c *gin.Context) {
+	v := app.cfg.Version
+	if v == "" {
+		v = "dev"
+	}
+	c.JSON(http.StatusOK, gin.H{"version": v})
+}
+
 func (app *ReactAppWrapper) getDocumentMetadata(c *gin.Context) {
 	uid := userID(c)
 	docid := common.ParamS(docIDParam, c)

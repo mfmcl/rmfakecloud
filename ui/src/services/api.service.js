@@ -141,6 +141,11 @@ class ApiServices {
       return r.blob();
     });
   }
+  getVersion() {
+    return fetch(`${constants.ROOT_URL}/version`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+  }
 
   createFolder(data) {
     return fetch(`${constants.ROOT_URL}/folders`, {

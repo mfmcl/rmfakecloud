@@ -109,6 +109,15 @@
   box-shadow: var(--bubble);
 
 }
+.sidebar-version {
+  padding: var(--sp-2) var(--sp-3) 0;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.02em;
+  color: var(--sidebar-ink-2);
+  opacity: 0.65;
+  user-select: text;
+}
 
 .sidebar-foot {
   display: flex;

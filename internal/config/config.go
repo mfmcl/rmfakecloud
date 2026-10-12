@@ -106,6 +106,8 @@ type Config struct {
 	MQTTPort          string
 	ICEServers        []interface{}
 	HashSchemaVersion string
+	// Version is the build version, set from the ldflags at startup.
+	Version string
 }
 
 // Verify verify

@@ -37,10 +37,18 @@ func ArchiveFromHashDoc(doc *HashDoc, rs RemoteStorage) (*exporter.MyArchive, er
 			if err != nil {
 				return nil, err
 			}
-			err = json.Unmarshal(contentBytes, &a.Content)
-			if err != nil {
+
+			// Decode only the fields we need. rmapi's archive.Content declares
+			// pageTags as []string, but newer firmware stores page tags as
+			// objects, so decoding into that struct fails with
+			// "cannot unmarshal object into ... pageTags of type string".
+			var content struct {
+				Pages []string `json:"pages"`
+			}
+			if err := json.Unmarshal(contentBytes, &content); err != nil {
 				return nil, err
 			}
+			a.Content.Pages = content.Pages
 		case storage.EpubFileExt:
 			fallthrough
 		case storage.PdfFileExt:

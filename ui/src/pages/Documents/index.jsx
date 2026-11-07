@@ -71,7 +71,10 @@ export default function Documents() {
     apiservice
       .listDocument()
       .then((data) => {
-        if (!cancelled) setTree(composeTree(data));
+        if (!cancelled) {
+          setTree(composeTree(data));
+          setLoadError(null);
+        }
       })
       .catch((e) => {
         if (!cancelled) {
@@ -109,7 +112,7 @@ export default function Documents() {
   const navigateTo = useCallback(
     (node) => {
       if (!node) return;
-      if (node.id === "root" || node.id === "trash") {
+      if (node.id === "root") {
         history.push("/documents");
       } else {
         history.push(`/documents/${node.id}`);
@@ -397,7 +400,7 @@ export default function Documents() {
     );
 
   // ----- render -----------------------------------------------------------
-  if (loadError) {
+  if (loadError && !tree) {
     return (
       <div className="page">
         <div className="page-inner">
@@ -546,7 +549,7 @@ export default function Documents() {
             <input {...getInputProps()} />
             {isDragActive && <div className="docs-drop-veil">Drop files to upload</div>}
 
-            {node && !isFolder && <FilePreview file={node} />}
+            {node && !isFolder && <FilePreview key={node.id} file={node} />}
 
             {isFolder && entries.length > 0 && (
               <Listing

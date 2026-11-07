@@ -268,7 +268,7 @@
   flex-direction: column;
 }
 
-/* Wrapper that receives location key to trigger page transitions */
+/* Page transitions run between screens; file navigation keeps the explorer mounted. */
 .page-stage {
   flex: 1;
   min-height: 0;

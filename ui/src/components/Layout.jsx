@@ -14,6 +14,10 @@ export default function Layout({ children }) {
   const { theme, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  // Folder and file URLs share one explorer instance and its loaded tree.
+  const pageKey = location.pathname.startsWith("/documents/")
+    ? "/documents"
+    : location.pathname;
 
   useEffect(() => {
     setMenuOpen(false);
@@ -46,7 +50,7 @@ export default function Layout({ children }) {
 
         <div className="content">
           <PasscodeResets />
-          <div key={location.pathname} className="page-stage">
+          <div key={pageKey} className="page-stage">
             {children}
           </div>
         </div>

@@ -14,7 +14,7 @@ let
 in
 buildGoModule rec {
   pname = "rmfakecloud";
-  version = "0.0.31-custom";
+  version = "0.0.32-custom";
 
   inherit src;
 
